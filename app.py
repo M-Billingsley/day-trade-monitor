@@ -370,3 +370,7 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
             st.metric("Time Window", "✅ PASS" if data["time_ok"] else "❌ FAIL", delta="OVERRIDDEN" if override else None)
             st.metric("MACD + Histogram", "✅ PASS" if data["histogram_ok"] else "❌ FAIL")
             st.metric("QQQ Rel Strength", "✅ PASS" if data["rel_strength_ok"] else "❌ FAIL")
+    else:
+        st.warning(f"**{data['label']} SIGNAL – {tick}**")
+else:
+    st.info("👆 Select a ticker from Color Cards or Table above")
