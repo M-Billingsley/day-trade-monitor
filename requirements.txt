@@ -1,0 +1,7 @@
+streamlit>=1.42.0
+pandas
+yfinance
+plotly
+twilio
+pyTelegramBotAPI
+numpy
