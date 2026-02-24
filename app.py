@@ -17,7 +17,15 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
+# Make primary buttons blue again
+st.markdown("""
+<style>
+    button[kind="primary"] {
+        background-color: #0d6efd !important;
+        color: white !important;
+    }
+</style>
+""", unsafe_allow_html=True)
 # ====================== CACHING ======================
 @st.cache_data(ttl=5, show_spinner=False)
 def get_history(ticker: str, period: str = "2d", interval: str = "1d"):
@@ -592,5 +600,5 @@ if auto_refresh:
         st.session_state.last_refresh = time.time()
     if time.time() - st.session_state.last_refresh >= 10:
         st.session_state.last_refresh = time.time()
-        st.cache_data.clear()   # ← This forces fresh data every 10 seconds
+        st.cache_data.clear()   # Forces fresh prices
         st.rerun()
