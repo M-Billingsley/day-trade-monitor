@@ -164,6 +164,33 @@ with st.expander("👨‍👩‍👧‍👦 How to use (for family & friends)", 
     6. Log your trades at the bottom
     """)
     st.success("You're all set! Share this link with family.")
+    # ====================== TELEGRAM SETUP GUIDE FOR NEW USERS ======================
+with st.expander("🆕 New to Telegram? Full Setup Guide (3 minutes)", expanded=True):
+    st.markdown("""
+    **Step-by-step (do this once):**
+
+    1. Open the **Telegram** app on your phone.
+    2. Tap the **magnifying glass** 🔍 at the top.
+    3. Search `@BotFather` → tap the official one (blue checkmark).
+    4. Type `/newbot` and send.
+    5. Give it any name (e.g. "My Trade Bot") and send.
+    6. BotFather will reply with a long code like `7123456789:AAFxxxxxxxxxxxxxxxxxxxxxxxxxxxx`  
+       → **Copy the entire code** (this is your **Bot Token**).
+
+    7. Now search for `@userinfobot` and open it.
+    8. Type `/start` and send.
+    9. It will reply with `id: 123456789` (or a longer number)  
+       → **Copy just the number** (this is your **Chat ID**).
+
+    10. Back in this app → sidebar → **✉️ Telegram** tab.
+    11. Paste your Bot Token in the first box.  
+        Paste your Chat ID in the second box.
+    12. Click anywhere → you should see **✅ Telegram saved**.
+    13. Click the blue **🔵 Send Test Telegram Now** button to test.
+
+    Done! You will now get instant alerts on every **STRONG BUY**.
+    """)
+    st.success("✅ Setup complete — you’re ready for alerts!")
 qqq_today = get_history("QQQ", "2d")
 qqq_chg = (qqq_today['Close'].iloc[-1] - qqq_today['Close'].iloc[-2]) / qqq_today['Close'].iloc[-2] * 100 if len(qqq_today) > 1 else 0
 if qqq_chg > 0.8:
