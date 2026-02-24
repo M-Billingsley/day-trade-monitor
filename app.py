@@ -150,7 +150,20 @@ with st.sidebar:
 # ====================== TITLE + REGIME + HEAT-MAP + ACCOUNT ======================
 st.title("Day Trade Monitor")
 st.caption("High Risk / High Reward – Rules only, no emotion")
+# ====================== CUSTOM WELCOME PAGE FOR FAMILY ======================
+st.markdown("### 🚀 Welcome to Day Trade Monitor")
+st.markdown("**High-conviction leveraged ETF day-trading signals with auto Telegram alerts**")
 
+with st.expander("👨‍👩‍👧‍👦 How to use (for family & friends)", expanded=True):
+    st.markdown("""
+    1. Open this link on your phone or computer
+    2. Sidebar → **✉️ Telegram** tab
+    3. Paste your Bot Token and Chat ID **once** (it saves forever)
+    4. Click the **📨 Send Morning Summary** button every morning
+    5. Click colored cards to see full trade plan
+    6. Log your trades at the bottom
+    """)
+    st.success("You're all set! Share this link with family.")
 qqq_today = get_history("QQQ", "2d")
 qqq_chg = (qqq_today['Close'].iloc[-1] - qqq_today['Close'].iloc[-2]) / qqq_today['Close'].iloc[-2] * 100 if len(qqq_today) > 1 else 0
 if qqq_chg > 0.8:
@@ -490,21 +503,37 @@ with st.expander("📒 Trade Log"):
         log_shares = st.number_input("Shares", min_value=50, step=50)
     with col2:
         notes = st.text_area("Notes", height=120)
-    if st.button("Log Trade", width="stretch"):
-        if log_ticker and entry_price > 0 and log_shares > 0:
-            pl = (exit_price - entry_price) * log_shares if exit_price > 0 else None
-            new_row = pd.DataFrame([{
-                "Date": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                "Ticker": log_ticker.upper(),
-                "Entry Price": entry_price,
-                "Exit Price": exit_price if exit_price > 0 else "",
-                "Shares": log_shares,
-                "P/L $": pl if pl is not None else "",
-                "Notes": notes
-            }])
-            trades_df = pd.concat([trades_df, new_row], ignore_index=True)
-            trades_df.to_csv(CSV_FILE, index=False)
-            st.success("✅ Trade logged!")
+
+    col_log1, col_log2 = st.columns(2)
+    with col_log1:
+        if st.button("Log Trade", width="stretch"):
+            if log_ticker and entry_price > 0 and log_shares > 0:
+                pl = (exit_price - entry_price) * log_shares if exit_price > 0 else None
+                new_row = pd.DataFrame([{
+                    "Date": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                    "Ticker": log_ticker.upper(),
+                    "Entry Price": entry_price,
+                    "Exit Price": exit_price if exit_price > 0 else "",
+                    "Shares": log_shares,
+                    "P/L $": pl if pl is not None else "",
+                    "Notes": notes
+                }])
+                trades_df = pd.concat([trades_df, new_row], ignore_index=True)
+                trades_df.to_csv(CSV_FILE, index=False)
+                st.success("✅ Trade logged!")
+    with col_log2:
+        if st.button("📥 Download Full Trade Log as Excel", type="primary", width="stretch"):
+            from io import BytesIO
+            output = BytesIO()
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                trades_df.to_excel(writer, index=False, sheet_name="Trade_Log")
+            output.seek(0)
+            st.download_button(
+                label="⬇️ Click to Download Excel",
+                data=output,
+                file_name="day_trade_log.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
     st.dataframe(trades_df.tail(10), use_container_width=True)
 
 # ====================== MORNING SUMMARY ======================
