@@ -19,7 +19,7 @@ st.set_page_config(
 )
 
 # ====================== CACHING ======================
-@st.cache_data(ttl=15, show_spinner=False)
+@st.cache_data(ttl=5, show_spinner=False)
 def get_history(ticker: str, period: str = "2d", interval: str = "1d"):
     return yf.Ticker(ticker).history(period=period, interval=interval)
 
