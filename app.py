@@ -150,7 +150,13 @@ with st.sidebar:
             st.session_state.telegram_token = tg_token
             st.session_state.telegram_chat_id = tg_chat
             st.success("✅ Telegram saved")
-
+        if st.button("🔵 Send Test Telegram Now"):
+            try:
+                bot = TeleBot(st.session_state.telegram_token)
+                bot.send_message(st.session_state.telegram_chat_id, "✅ TEST SUCCESSFUL!\nDay Trade Monitor is connected and ready to send STRONG BUY alerts 🚀")
+                st.success("✅ Test message sent to your Telegram!")
+            except Exception as e:
+                st.error(f"Test failed: {str(e)[:100]}")
 # ====================== TITLE + REGIME + HEAT-MAP ======================
 st.title("Day Trade Monitor")
 st.caption("High Risk / High Reward – Rules only, no emotion")
