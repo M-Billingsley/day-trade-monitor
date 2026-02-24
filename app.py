@@ -85,6 +85,10 @@ def create_colored_button(tick: str, label: str, price: float, chg: float, stren
 # ====================== SIDEBAR ======================
 with st.sidebar:
     st.header("📈 Live Market Data")
+        if st.button("🔄 Force Refresh Now (All Data)", type="primary", use_container_width=True):
+        st.cache_data.clear()
+        st.rerun()
+    st.caption("Auto-refresh every 10 seconds is ON below")
     st.subheader("Major Indices")
     for sym, name in zip(["^DJI", "^IXIC", "^GSPC"], ["Dow", "Nasdaq", "S&P 500"]):
         try:
