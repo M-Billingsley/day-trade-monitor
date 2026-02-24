@@ -592,4 +592,5 @@ if auto_refresh:
         st.session_state.last_refresh = time.time()
     if time.time() - st.session_state.last_refresh >= 10:
         st.session_state.last_refresh = time.time()
+        st.cache_data.clear()   # ← This forces fresh data every 10 seconds
         st.rerun()
