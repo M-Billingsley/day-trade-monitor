@@ -60,8 +60,7 @@ for prefix, section in [("twilio_", "twilio"), ("telegram_", "telegram")]:
         sess_key = f"{prefix}{key}"
         if sess_key not in st.session_state:
             st.session_state[sess_key] = secrets[section][key]
-
-# ====================== COLORED BUTTONS ======================
+# ====================== CLEAN COLORED BUTTONS ======================
 def create_colored_button(tick: str, label: str, strength: int):
     key = f"btn_{label.lower()}_{tick}"
     if "STRONG BUY" in label:
@@ -77,16 +76,16 @@ def create_colored_button(tick: str, label: str, strength: int):
     <style>
         div[data-testid="stVerticalBlock"] > div:has(button[key="{key}"]) {{
             background-color: {bg} !important;
-            border-radius: 16px !important;
+            border-radius: 18px !important;
             padding: 20px !important;
-            border: 3px solid rgba(255,255,255,0.3) !important;
+            border: 3px solid rgba(255,255,255,0.25) !important;
         }}
         div.stButton > button[key="{key}"] {{
             background-color: transparent !important;
             color: white !important;
-            font-size: 1.4rem !important;
+            font-size: 1.45rem !important;
             font-weight: 700 !important;
-            height: 110px !important;
+            height: 120px !important;
             border: none !important;
         }}
     </style>
@@ -365,9 +364,25 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
     data = st.session_state.ticker_data
     tick = st.session_state.selected_ticker
     override = st.checkbox("**Override fail Windows** (show BUY plan anyway)", value=False, key="time_override")
+
+    st.success(f"🚀 **{data['label']} – {tick}**")
+
+    # 9 Trade Gates — ALWAYS VISIBLE
+    st.subheader("🔍 9 Trade Gates – Pass/Fail")
+    dcols = st.columns(3)
+    with dcols[0]:
+        st.metric("Bullish Trend", "✅ PASS" if data["bull"] else "❌ FAIL")
+        st.metric("Volume OK", "✅ PASS" if data["vol_ok"] else "❌ FAIL")
+    with dcols[1]:
+        st.metric("RSI OK", "✅ PASS" if data["rsi"] < (78 if not is_strict else 75) else "❌ FAIL")
+        st.metric("Pullback < +4.5%", "✅ PASS" if data["chg_from_open"] < (4.5 if not is_strict else 3) else "❌ FAIL")
+    with dcols[2]:
+        st.metric("Time Window", "✅ PASS" if data["time_ok"] else "❌ FAIL", delta="OVERRIDDEN" if override else None)
+        st.metric("MACD + Histogram", "✅ PASS" if data["histogram_ok"] else "❌ FAIL")
+        st.metric("QQQ Rel Strength", "✅ PASS" if data["rel_strength_ok"] else "❌ FAIL")
+
+    # Chart + Full Execution Plan + Backtest (only for BUY or override)
     if "BUY" in data["label"] or (override and data["label"] != "SHORT"):
-        st.success(f"🚀 **{data['label']} – {tick}**")
-        
         st.subheader(f"📊 {tick} – 5-Day Price Action")
         try:
             import plotly.graph_objects as go
@@ -383,7 +398,7 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
         except:
             st.caption("Plotly chart unavailable")
 
-        # Dynamic Risk + Execution
+        # Dynamic Risk + Execution (your original code)
         if "STRONG BUY" in data["label"]:
             dynamic_risk_pct = 2.0
             justification = "✅ **STRONG BUY** (9/9 conditions met) → Full conviction = **2.0%** account risk"
@@ -423,8 +438,8 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
 
             st.info(f"**Dynamic Risk Sizing Justification**\n\n{justification}")
 
-        # FULL BACKTEST
-            st.subheader("📊 Realistic Intraday Backtest – Last 60 Trading Days")
+        # Backtest
+        st.subheader("📊 Realistic Intraday Backtest – Last 60 Trading Days")
         if st.button("🚀 Run Realistic Intraday Backtest on " + tick, type="secondary", key=f"bt_{tick}"):
             with st.spinner("Simulating 15m bars..."):
                 try:
