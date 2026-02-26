@@ -171,7 +171,34 @@ elif qqq_chg > -0.8:
 else:
     regime = "🔴 Choppy/Bearish Day – Caution Advised"
 st.markdown(f"<h3 style='text-align:center; background:#1e3a8a; color:white; padding:14px; border-radius:12px; margin-bottom:12px;'>{regime} (QQQ {qqq_chg:+.1f}%)</h3>", unsafe_allow_html=True)
+# ====================== FAMILY-FRIENDLY TELEGRAM SETUP GUIDE ======================
+st.markdown("### 👨‍👩‍👧‍👦 Welcome to Day Trade Monitor – Family Edition")
+with st.expander("🆕 New to Telegram? Full Setup Guide (3 minutes)", expanded=True):
+    st.markdown("""
+    **Step-by-step (do this once):**
 
+    1. Open the **Telegram** app on your phone.
+    2. Tap the **magnifying glass** 🔍 at the top.
+    3. Search `@BotFather` → tap the official one (blue checkmark).
+    4. Type `/newbot` and send.
+    5. Give it any name (e.g. "My Trade Bot") and send.
+    6. BotFather will reply with a long code like `7123456789:AAFxxxxxxxxxxxxxxxxxxxxxxxxxxxx`  
+       → **Copy the entire code** (this is your **Bot Token**).
+
+    7. Now search for `@userinfobot` and open it.
+    8. Type `/start` and send.
+    9. It will reply with `id: 123456789` (or a longer number)  
+       → **Copy just the number** (this is your **Chat ID**).
+
+    10. Back in this app → sidebar → **✉️ Telegram** tab.
+    11. Paste your Bot Token in the first box.  
+        Paste your Chat ID in the second box.
+    12. Click anywhere → you should see **✅ Telegram saved**.
+    13. Click the blue **🔵 Send Test Telegram Now** button to test.
+
+    Done! You will now get instant alerts on every **STRONG BUY**.
+    """)
+    st.success("✅ Setup complete — you’re ready for alerts!")
 st.subheader("📈 Live Heat-Map – All 14 Tickers")
 heat_cols = st.columns(7)
 for i, tick in enumerate(TICKERS):
