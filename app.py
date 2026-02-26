@@ -65,7 +65,7 @@ for prefix, section in [("twilio_", "twilio"), ("telegram_", "telegram")]:
         if sess_key not in st.session_state:
             st.session_state[sess_key] = secrets[section][key]
 
-# ====================== CLEAN COLORED BUTTONS ======================
+# ====================== CLEAN FULL-COLOR CARDS ======================
 def create_colored_button(tick: str, label: str, strength: int):
     key = f"btn_{label.lower()}_{tick}"
     if "STRONG BUY" in label:
@@ -83,14 +83,14 @@ def create_colored_button(tick: str, label: str, strength: int):
             background-color: {bg} !important;
             border-radius: 18px !important;
             padding: 24px !important;
-            border: 3px solid rgba(255,255,255,0.3) !important;
+            border: 3px solid rgba(255,255,255,0.25) !important;
         }}
         div.stButton > button[key="{key}"] {{
             background-color: transparent !important;
             color: white !important;
             font-size: 1.5rem !important;
             font-weight: 700 !important;
-            height: 125px !important;
+            height: 130px !important;
             border: none !important;
             line-height: 1.3;
         }}
@@ -239,8 +239,7 @@ with auto_col:
 
 # ====================== SIGNALS ======================
 st.subheader("🚀 Trade Signals")
-view_mode = st.radio("Display Mode", ["Color Cards", "Sortable Table"], horizontal=True, index=0)
-
+# Only Color Cards view (Sortable Table removed)
 ticker_data_list = []
 qqq_hist = get_history("QQQ", "5d")
 qqq_open = qqq_hist['Open'].iloc[-1] if not qqq_hist.empty else 0
@@ -309,17 +308,16 @@ for tick in TICKERS:
         pass
 
 # Display
-if view_mode == "Color Cards":
-    cols = st.columns(4)
-    for i, row in enumerate(ticker_data_list):
-        tick = row["Ticker"]
-        label = row["Signal"]
-        strength = row["Strength"]
-        col = cols[i % 4]
-        with col.container(border=True):
-            if create_colored_button(tick, label, strength):
-                st.session_state.selected_ticker = tick
-                st.session_state.ticker_data = row["Data"]
+cols = st.columns(4)
+for i, row in enumerate(ticker_data_list):
+    tick = row["Ticker"]
+    label = row["Signal"]
+    strength = row["Strength"]
+    col = cols[i % 4]
+    with col.container(border=True):
+        if create_colored_button(tick, label, strength):
+            st.session_state.selected_ticker = tick
+            st.session_state.ticker_data = row["Data"]
 else:
     df = pd.DataFrame(ticker_data_list)[["Ticker", "Price", "Chg %", "Strength", "Signal"]]
     def highlight_row(row):
