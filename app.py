@@ -403,7 +403,7 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
             st.info(f"**Dynamic Risk Sizing Justification**\n\n{justification}")
 
         # FULL BACKTEST
-               st.subheader("📊 Realistic Intraday Backtest – Last 60 Trading Days")
+            st.subheader("📊 Realistic Intraday Backtest – Last 60 Trading Days")
         if st.button("🚀 Run Realistic Intraday Backtest on " + tick, type="secondary", key=f"bt_{tick}"):
             with st.spinner("Simulating 15m bars..."):
                 try:
