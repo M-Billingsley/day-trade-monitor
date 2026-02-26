@@ -65,7 +65,7 @@ for prefix, section in [("twilio_", "twilio"), ("telegram_", "telegram")]:
         if sess_key not in st.session_state:
             st.session_state[sess_key] = secrets[section][key]
 
-# ====================== CLEAN FULL-COLOR CARDS ======================
+# ====================== STRONG COLORED CARDS ======================
 def create_colored_button(tick: str, label: str, strength: int):
     key = f"btn_{label.lower()}_{tick}"
     
@@ -87,17 +87,16 @@ def create_colored_button(tick: str, label: str, strength: int):
             font-weight: 700 !important;
             height: 135px !important;
             border-radius: 18px !important;
-            border: 3px solid rgba(255,255,255,0.35) !important;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+            border: none !important;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4) !important;
         }}
         button[key="{key}"]:hover {{
-            filter: brightness(1.1) !important;
+            filter: brightness(1.15) !important;
         }}
     </style>
     """, unsafe_allow_html=True)
 
     return st.button(f"{tick}\n{label}\n{strength}/9", key=key, width="stretch")
-
 # ====================== SIDEBAR ======================
 with st.sidebar:
     st.header("📈 Live Market Data")
