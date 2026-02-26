@@ -306,70 +306,26 @@ for tick in TICKERS:
     except:
         pass
 
-# ====================== FULL COLORED CARDS (HTML version - reliable) ======================
+# ====================== FIXED COLORED CARDS (RELIABLE BUTTONS) ======================
 st.subheader("🚀 Trade Signals")
 
-html_cards = """
-<style>
-    .trade-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-        gap: 14px;
-        margin-top: 10px;
-    }
-    .trade-card {
-        padding: 22px;
-        border-radius: 18px;
-        color: white;
-        text-align: center;
-        font-weight: 700;
-        font-size: 1.5rem;
-        cursor: pointer;
-        transition: all 0.2s;
-        box-shadow: 0 6px 16px rgba(0,0,0,0.35);
-    }
-    .trade-card:hover {
-        transform: scale(1.04);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.4);
-    }
-</style>
-<div class="trade-grid">
-"""
+# Create a nice responsive grid
+grid_cols = st.columns(7)   # 7 columns = perfect for 14 tickers
 
-for row in ticker_data_list:
+for idx, row in enumerate(ticker_data_list):
     tick = row["Ticker"]
     label = row["Signal"]
     strength = row["Strength"]
     
-    if "STRONG BUY" in label:
-        bg = "#0f5132"
-    elif "BUY" in label:
-        bg = "#166534"
-    elif label == "SIT":
-        bg = "#854d0e"
-    else:
-        bg = "#991b1b"
-    
-    html_cards += f'''
-    <div class="trade-card" style="background-color: {bg};" onclick="window.location.href = '?selected={tick}'">
-        {tick}<br>
-        {label}<br>
-        {strength}/9
-    </div>
-    '''
-
-html_cards += "</div>"
-
-st.markdown(html_cards, unsafe_allow_html=True)
-
-# Handle card click
-if 'selected' in st.query_params:
-    selected_tick = st.query_params['selected']
-    for row in ticker_data_list:
-        if row["Ticker"] == selected_tick:
-            st.session_state.selected_ticker = selected_tick
+    col_idx = idx % 7
+    with grid_cols[col_idx]:
+        clicked = create_colored_button(tick, label, strength)
+        
+        if clicked:
+            # Store selected ticker + its full data
+            st.session_state.selected_ticker = tick
             st.session_state.ticker_data = row["Data"]
-            st.rerun()
+            st.rerun()   # forces immediate update
             
 # ====================== AUTO ALERTS ======================
 now_et = datetime.now(ZoneInfo("America/New_York"))
