@@ -17,18 +17,26 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# ====================== BLUE BUTTONS + IMPROVED CARD BUTTONS ======================
 st.markdown("""
 <style>
-    .stColumn > div > div > div > button {
-        width: 100% !important;
-        margin-bottom: 8px !important;
+    div[role="radiogroup"] label {
+        font-size: 1.2rem !important;
+        font-weight: 600 !important;
     }
-</style>
-""", unsafe_allow_html=True)
-# ====================== BLUE BUTTONS ======================
-st.markdown("""
-<style>
-    button[kind="primary"] { background-color: #0d6efd !important; color: white !important; }
+    div[role="radiogroup"] label[data-baseweb="radio"] {
+        color: #0d6efd !important;
+    }
+    button[kind="primary"] {
+        background-color: #0d6efd !important;
+        color: white !important;
+        width: 100% !important;
+        margin-bottom: 12px !important;
+        font-size: 1.55rem !important;
+        height: 135px !important;
+        border-radius: 18px !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -93,7 +101,7 @@ def create_colored_button(tick: str, label: str, strength: int):
     </style>
     """, unsafe_allow_html=True)
 
-    return st.button(f"{tick}\n{label}\n{strength}/9", key=key, width="stretch")
+    return st.button(f"{tick}\n{label}\n{strength}/9", key=key, use_container_width=True)
 
 # ====================== SIDEBAR ======================
 with st.sidebar:
@@ -168,6 +176,7 @@ elif qqq_chg > -0.8:
 else:
     regime = "🔴 Choppy/Bearish Day – Caution Advised"
 st.markdown(f"<h3 style='text-align:center; background:#1e3a8a; color:white; padding:14px; border-radius:12px; margin-bottom:12px;'>{regime} (QQQ {qqq_chg:+.1f}%)</h3>", unsafe_allow_html=True)
+
 # ====================== FAMILY-FRIENDLY TELEGRAM SETUP GUIDE ======================
 st.markdown("### 👨‍👩‍👧‍👦 Welcome to Day Trade Monitor – Family Edition")
 with st.expander("🆕 New to Telegram? Full Setup Guide (3 minutes)", expanded=False):
@@ -233,9 +242,8 @@ with refresh_col:
 with auto_col:
     auto_refresh = st.checkbox("Auto-refresh every 10 seconds", value=True)
 
-# ====================== SIGNALS ======================
-
-# Only Color Cards view (Sortable Table removed)
+# ====================== SIGNALS – BUILD DATA ======================
+st.subheader("🚀 Trade Signals")
 ticker_data_list = []
 qqq_hist = get_history("QQQ", "5d")
 qqq_open = qqq_hist['Open'].iloc[-1] if not qqq_hist.empty else 0
@@ -303,36 +311,29 @@ for tick in TICKERS:
     except:
         pass
 
-# ====================== FIXED COLORED CARDS (RELIABLE BUTTONS) ======================
-st.subheader("🚀 Trade Signals")
-
-# Create a nice responsive grid
-grid_cols = st.columns(7)   # 7 columns = perfect for 14 tickers
-
-for idx, row in enumerate(ticker_data_list):
+# ====================== FIXED COLORED CARDS – 7-COLUMN GRID (NO HTML SANITIZER ISSUES) ======================
+cols = st.columns(7)
+for i, row in enumerate(ticker_data_list):
     tick = row["Ticker"]
     label = row["Signal"]
     strength = row["Strength"]
     
-    col_idx = idx % 7
-    with grid_cols[col_idx]:
-        clicked = create_colored_button(tick, label, strength)
-        
-        if clicked:
-            # Store selected ticker + its full data
+    with cols[i % 7]:
+        if create_colored_button(tick, label, strength):
             st.session_state.selected_ticker = tick
             st.session_state.ticker_data = row["Data"]
-            st.rerun()   # forces immediate update
-            
-# Handle query param click (fallback for direct URL access)
+            st.rerun()
+
+# Fallback for direct URL clicks (shareable links)
 if 'selected' in st.query_params:
-    selected = st.query_params['selected']
+    selected_tick = st.query_params['selected']
     for row in ticker_data_list:
-        if row["Ticker"] == selected:
-            st.session_state.selected_ticker = selected
+        if row["Ticker"] == selected_tick:
+            st.session_state.selected_ticker = selected_tick
             st.session_state.ticker_data = row["Data"]
             st.rerun()
-            
+            break
+
 # ====================== AUTO ALERTS ======================
 now_et = datetime.now(ZoneInfo("America/New_York"))
 if dt_time(9, 30) <= now_et.time() <= dt_time(12, 0):
@@ -396,7 +397,7 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
         except:
             st.caption("Plotly chart unavailable")
 
-        # Dynamic Risk + Execution (your original code)
+        # Dynamic Risk + Execution
         if "STRONG BUY" in data["label"]:
             dynamic_risk_pct = 2.0
             justification = "✅ **STRONG BUY** (9/9 conditions met) → Full conviction = **2.0%** account risk"
@@ -535,7 +536,7 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
     else:
         st.warning(f"**{data['label']} SIGNAL – {tick}**")
 else:
-    st.info("👆 Select a ticker from Color Cards or Table above")
+    st.info("👆 Click any colored card above to see full trade plan + backtest")
 
 # ====================== PORTFOLIO HEAT ======================
 st.subheader("🔥 Portfolio Heat / Open Risk")
