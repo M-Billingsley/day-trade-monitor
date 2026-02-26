@@ -239,14 +239,77 @@ with auto_col:
 # ====================== SIGNALS ======================
 st.subheader("🚀 Trade Signals")
 
-# ====================== COLORED CARDS WITH PERFECT LAYOUT (Ticker top, Signal middle, X/9 bottom) ======================
+# ====================== BUILD SIGNALS DATA ======================
+ticker_data_list = []
+qqq_hist = get_history("QQQ", "5d")
+qqq_open = qqq_hist['Open'].iloc[-1] if not qqq_hist.empty else 0
+qqq_curr = qqq_hist['Close'].iloc[-1] if not qqq_hist.empty else 0
+qqq_chg_from_open = (qqq_curr - qqq_open) / qqq_open * 100 if qqq_open != 0 else 0
+
+for tick in TICKERS:
+    try:
+        hist = get_history(tick, "5d")
+        if hist.empty: continue
+        prev_close = hist['Close'].iloc[-2] if len(hist) > 1 else hist['Close'].iloc[-1]
+        curr = hist['Close'].iloc[-1]
+        today_open = hist['Open'].iloc[-1]
+        chg_from_open = (curr - today_open) / today_open * 100
+        prev_vol = hist['Volume'].iloc[-2] if len(hist) > 1 else 0
+        curr_vol = hist['Volume'].iloc[-1]
+        vol_ok = curr_vol > prev_vol * (1.5 if not is_strict else 1.8)
+        delta = hist['Close'].diff()
+        gain = delta.where(delta > 0, 0).rolling(14).mean()
+        loss = -delta.where(delta < 0, 0).rolling(14).mean().abs()
+        loss_safe = loss.replace(0, 1e-10)
+        rs = gain / loss_safe
+        rsi = max(0, min(100, 100 - (100 / (1 + rs)).iloc[-1]))
+        rsi_ok = rsi < (78 if not is_strict else 75)
+        ema50 = hist['Close'].ewm(span=50, adjust=False).mean().iloc[-1]
+        ema200 = hist['Close'].ewm(span=200, adjust=False).mean().iloc[-1]
+        bull = ema50 > ema200
+        ema9 = hist['Close'].ewm(span=9, adjust=False).mean().iloc[-1]
+        near_9ema = abs(curr - ema9) / ema9 < (0.02 if not is_strict else 0.015)
+        now_et_time = datetime.now(ZoneInfo("America/New_York")).time()
+        time_ok = dt_time(9, 30) <= now_et_time <= dt_time(12, 0) if not is_strict else dt_time(9, 45) <= now_et_time <= dt_time(11, 30)
+        ema12 = hist['Close'].ewm(span=12, adjust=False).mean()
+        ema26 = hist['Close'].ewm(span=26, adjust=False).mean()
+        macd_line = ema12 - ema26
+        signal_line = macd_line.ewm(span=9, adjust=False).mean()
+        macd_hist = macd_line - signal_line
+        macd_bullish = macd_line.iloc[-1] > signal_line.iloc[-1]
+        hist_positive = macd_hist.iloc[-1] > 0
+        hist_rising = macd_hist.iloc[-1] > macd_hist.iloc[-2] if len(macd_hist) > 1 else False
+        histogram_ok = hist_positive and (hist_rising if is_strict else True)
+        rel_strength_ok = chg_from_open > qqq_chg_from_open - 0.5
+        conditions_met = sum([bull, vol_ok, rsi_ok, chg_from_open < (4.5 if not is_strict else 3),
+                              near_9ema, time_ok, macd_bullish, histogram_ok, rel_strength_ok])
+        if conditions_met >= 9:
+            label = "STRONG BUY"
+        elif conditions_met >= 7 and time_ok:
+            label = "BUY"
+        elif chg_from_open > 6 or rsi > 82:
+            label = "SIT"
+        else:
+            label = "SHORT"
+        ticker_data_list.append({
+            "Ticker": tick,
+            "Price": round(curr, 2),
+            "Chg %": round(chg_from_open, 1),
+            "Strength": conditions_met,
+            "Signal": label,
+            "Data": {
+                "curr": curr, "prev": prev_close, "chg_from_open": chg_from_open,
+                "rsi": rsi, "bull": bull, "vol_ok": vol_ok, "near_9ema": near_9ema,
+                "time_ok": time_ok, "macd_bullish": macd_bullish, "histogram_ok": histogram_ok,
+                "rel_strength_ok": rel_strength_ok, "label": label, "strength": conditions_met
+            }
+        })
+    except:
+        pass
+
+# ====================== COLORED CARDS (Ticker top, Signal middle, X/9 bottom) ======================
 st.markdown("""
 <style>
-    /* Hide toolbar */
-    header, footer, [data-testid="stToolbar"], [data-testid="stHeader"], .stAppDeployButton {
-        display: none !important;
-    }
-    
     .trade-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(205px, 1fr));
@@ -285,11 +348,10 @@ st.markdown("""
         font-size: 1.15rem;
         opacity: 0.95;
     }
-    
-    .strong-buy { background-color: #0f5132 !important; }   /* Dark green */
-    .buy       { background-color: #166534 !important; }   /* Green */
-    .sit       { background-color: #854d0e !important; }   /* Orange */
-    .short     { background-color: #991b1b !important; }   /* Red */
+    .strong-buy { background-color: #0f5132 !important; }
+    .buy       { background-color: #166534 !important; }
+    .sit       { background-color: #854d0e !important; }
+    .short     { background-color: #991b1b !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -316,7 +378,6 @@ for row in ticker_data_list:
     </div>
     '''
 html += '</div>'
-
 st.markdown(html, unsafe_allow_html=True)
 
 # Handle card click
@@ -328,7 +389,6 @@ if 'selected' in st.query_params:
             st.session_state.ticker_data = row["Data"]
             st.rerun()
             break
-
 # ====================== AUTO ALERTS ======================
 now_et = datetime.now(ZoneInfo("America/New_York"))
 if dt_time(9, 30) <= now_et.time() <= dt_time(12, 0):
