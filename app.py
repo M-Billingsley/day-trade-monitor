@@ -18,10 +18,10 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ====================== GLOBAL STYLING (FORCES COLORS + CLEAN SIZE) ======================
+# ====================== GLOBAL STYLING ======================
 st.markdown("""
 <style>
-    /* Hide toolbar */
+    /* Hide unwanted toolbar */
     header, footer, [data-testid="stToolbar"], [data-testid="stHeader"], .stAppDeployButton {
         display: none !important;
     }
@@ -74,6 +74,26 @@ for prefix, section in [("twilio_", "twilio"), ("telegram_", "telegram")]:
 # ====================== COLORED BUTTON FUNCTION ======================
 def create_colored_button(tick: str, label: str, strength: int):
     key = f"btn_{label.lower().replace(' ', '_')}_{tick}"
+    
+    if "STRONG BUY" in label:
+        bg = "#0f5132"
+    elif "BUY" in label:
+        bg = "#166534"
+    elif label == "SIT":
+        bg = "#854d0e"
+    else:
+        bg = "#991b1b"
+
+    # Inject color RIGHT BEFORE the button
+    st.markdown(f"""
+    <style>
+        button[key="{key}"] {{
+            background-color: {bg} !important;
+            color: white !important;
+        }}
+    </style>
+    """, unsafe_allow_html=True)
+
     return st.button(f"{tick}\n{label}\n{strength}/9", key=key, use_container_width=True)
 
 # ====================== SIDEBAR ======================
@@ -285,32 +305,15 @@ for tick in TICKERS:
     except:
         pass
 
-# ====================== FORCE COLORED BUTTONS (THIS IS THE KEY PART) ======================
-color_css = "<style>"
-for row in ticker_data_list:
-    tick = row["Ticker"]
-    label = row["Signal"]
-    key = f"btn_{label.lower().replace(' ', '_')}_{tick}"
-    if "STRONG BUY" in label:
-        bg = "#0f5132"  # Dark green
-    elif "BUY" in label:
-        bg = "#166534"  # Green
-    elif label == "SIT":
-        bg = "#854d0e"  # Orange
-    else:
-        bg = "#991b1b"  # Red
-    color_css += f'button[key="{key}"] {{ background-color: {bg} !important; color: white !important; }}\n'
-color_css += "</style>"
-st.markdown(color_css, unsafe_allow_html=True)
-
-# ====================== COLORED BUTTON GRID ======================
+# ====================== COLORED BUTTON GRID (COLOR INJECTED RIGHT BEFORE EACH BUTTON) ======================
 cols = st.columns(7)
 for i, row in enumerate(ticker_data_list):
     tick = row["Ticker"]
     label = row["Signal"]
     strength = row["Strength"]
     with cols[i % 7]:
-        if create_colored_button(tick, label, strength):
+        create_colored_button(tick, label, strength)   # color is injected inside the function
+        if st.session_state.get(f"btn_{label.lower().replace(' ', '_')}_{tick}_clicked", False):
             st.session_state.selected_ticker = tick
             st.session_state.ticker_data = row["Data"]
             st.rerun()
@@ -434,6 +437,7 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
                     qqq_hist = yf.Ticker("QQQ").history(period="60d", interval="15m")
                     hist.index = hist.index.tz_convert("America/New_York")
                     qqq_hist.index = qqq_hist.index.tz_convert("America/New_York")
+                   
                     if len(hist) < 200:
                         st.warning("Not enough data")
                     else:
