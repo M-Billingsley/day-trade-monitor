@@ -20,7 +20,11 @@ st.set_page_config(
 st.markdown("""
 <style>
     div[role="radiogroup"] label {
-        font-size: 1.15rem !important;
+        font-size: 1.2rem !important;
+        font-weight: 600 !important;
+    }
+    div[role="radiogroup"] label[data-baseweb="radio"] {
+        color: #0d6efd !important;
     }
 </style>
 """, unsafe_allow_html=True)
