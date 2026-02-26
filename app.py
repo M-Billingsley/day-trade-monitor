@@ -97,6 +97,7 @@ def create_colored_button(tick: str, label: str, strength: int):
     """, unsafe_allow_html=True)
 
     return st.button(f"{tick}\n{label}\n{strength}/9", key=key, width="stretch")
+
 # ====================== SIDEBAR ======================
 with st.sidebar:
     st.header("📈 Live Market Data")
