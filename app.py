@@ -18,21 +18,27 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ====================== BUTTON STYLING ======================
+# ====================== GLOBAL STYLING (forces colors + small buttons + hides unwanted toolbar) ======================
 st.markdown("""
 <style>
-    button[kind="primary"] { background-color: #0d6efd !important; color: white !important; }
+    /* Hide unwanted Streamlit toolbar / Share / Edit buttons */
+    .stAppDeployButton, header, footer, [data-testid="stToolbar"], [data-testid="stHeader"] {
+        visibility: hidden !important;
+        display: none !important;
+    }
+    
+    /* Button sizing - smaller and clean */
     button {
         width: 100% !important;
-        margin-bottom: 12px !important;
-        font-size: 1.55rem !important;
-        height: 135px !important;
-        border-radius: 18px !important;
+        height: 115px !important;
+        font-size: 1.42rem !important;
+        margin-bottom: 10px !important;
+        border-radius: 16px !important;
         border: none !important;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.4) !important;
+        box-shadow: 0 6px 16px rgba(0,0,0,0.35) !important;
     }
     button:hover {
-        filter: brightness(1.15) !important;
+        filter: brightness(1.12) !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -67,28 +73,9 @@ for prefix, section in [("twilio_", "twilio"), ("telegram_", "telegram")]:
         if sess_key not in st.session_state:
             st.session_state[sess_key] = secrets[section][key]
 
-# ====================== COLORED BUTTON FUNCTION ======================
+# ====================== COLORED BUTTON FUNCTION (color applied via global CSS) ======================
 def create_colored_button(tick: str, label: str, strength: int):
     key = f"btn_{label.lower().replace(' ', '_')}_{tick}"
-    
-    if "STRONG BUY" in label:
-        bg = "#0f5132"
-    elif "BUY" in label:
-        bg = "#166534"
-    elif label == "SIT":
-        bg = "#854d0e"
-    else:
-        bg = "#991b1b"
-
-    st.markdown(f"""
-    <style>
-        button[key="{key}"] {{
-            background-color: {bg} !important;
-            color: white !important;
-        }}
-    </style>
-    """, unsafe_allow_html=True)
-
     return st.button(f"{tick}\n{label}\n{strength}/9", key=key, use_container_width=True)
 
 # ====================== SIDEBAR ======================
@@ -299,7 +286,25 @@ for tick in TICKERS:
     except:
         pass
 
-# ====================== COLORED CLICKABLE BUTTON GRID (NO HTML - 100% RELIABLE COLORS) ======================
+# ====================== GLOBAL COLORED BUTTON CSS (this is what finally forces colors) ======================
+color_css = "<style>"
+for row in ticker_data_list:
+    tick = row["Ticker"]
+    label = row["Signal"]
+    key = f"btn_{label.lower().replace(' ', '_')}_{tick}"
+    if "STRONG BUY" in label:
+        bg = "#0f5132"   # Dark green
+    elif "BUY" in label:
+        bg = "#166534"   # Green
+    elif label == "SIT":
+        bg = "#854d0e"   # Orange
+    else:
+        bg = "#991b1b"   # Red
+    color_css += f'button[key="{key}"] {{ background-color: {bg} !important; color: white !important; }}\n'
+color_css += "</style>"
+st.markdown(color_css, unsafe_allow_html=True)
+
+# ====================== COLORED BUTTON GRID ======================
 cols = st.columns(7)
 for i, row in enumerate(ticker_data_list):
     tick = row["Ticker"]
@@ -421,7 +426,6 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
 
             st.info(f"**Dynamic Risk Sizing Justification**\n\n{justification}")
 
-        # PERSISTENT BACKTEST
         st.subheader("📊 Realistic Intraday Backtest – Last 60 Trading Days")
         backtest_key = f"backtest_{tick}"
         if st.button("🚀 Run Realistic Intraday Backtest on " + tick, type="secondary", key=f"bt_{tick}"):
@@ -512,7 +516,6 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
                 except Exception as e:
                     st.error(f"Backtest error: {str(e)[:120]}")
 
-        # Show saved backtest results (persists across refreshes)
         if backtest_key in st.session_state and st.session_state[backtest_key]:
             r = st.session_state[backtest_key]
             col1, col2, col3, col4 = st.columns(4)
@@ -657,7 +660,7 @@ if st.button("📨 Send Morning Summary to Telegram", type="primary", use_contai
         except Exception as e:
             st.error(f"Failed: {str(e)[:80]}")
 
-# ====================== SMART AUTO-REFRESH (Market hours only + no cache clear) ======================
+# ====================== SMART AUTO-REFRESH ======================
 if auto_refresh:
     now_et = datetime.now(ZoneInfo("America/New_York"))
     market_open = dt_time(9, 30) <= now_et.time() <= dt_time(16, 0)
@@ -666,4 +669,4 @@ if auto_refresh:
             st.session_state.last_refresh = time.time()
         if time.time() - st.session_state.last_refresh >= 10:
             st.session_state.last_refresh = time.time()
-            st.rerun()  # No cache.clear() → backtest + selection stay visible!
+            st.rerun()
