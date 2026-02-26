@@ -17,7 +17,13 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
+st.markdown("""
+<style>
+    div[role="radiogroup"] label {
+        font-size: 1.15rem !important;
+    }
+</style>
+""", unsafe_allow_html=True)
 # ====================== BLUE BUTTONS ======================
 st.markdown("""
 <style>
@@ -56,38 +62,39 @@ for prefix, section in [("twilio_", "twilio"), ("telegram_", "telegram")]:
             st.session_state[sess_key] = secrets[section][key]
 
 # ====================== COLORED BUTTONS ======================
-def create_colored_button(tick: str, label: str, price: float, chg: float, strength: int):
+def create_colored_button(tick: str, label: str, chg: float, strength: int):
     key = f"btn_{label.lower()}_{tick}"
-    emoji = "🚀" if "STRONG" in label else "🟢" if "BUY" in label else "🟡" if label == "SIT" else "🔴"
     if "STRONG BUY" in label:
-        bg = "#0f5132"
+        bg = "#0f5132"  # Dark green
     elif "BUY" in label:
-        bg = "#166534"
+        bg = "#166534"  # Green
     elif label == "SIT":
-        bg = "#854d0e"
+        bg = "#854d0e"  # Orange
     else:
-        bg = "#991b1b"
+        bg = "#991b1b"  # Red
+
     st.markdown(f"""
     <style>
         div[data-testid="stVerticalBlock"] > div:has(button[key="{key}"]) {{
             background-color: {bg} !important;
             border-radius: 16px !important;
-            padding: 8px !important;
-            border: 2px solid rgba(255,255,255,0.15) !important;
+            padding: 16px !important;
+            border: 3px solid rgba(255,255,255,0.25) !important;
         }}
         div.stButton > button[key="{key}"] {{
             background-color: transparent !important;
             color: white !important;
-            font-size: 1.05rem !important;
+            font-size: 1.35rem !important;
             font-weight: 700 !important;
-            height: 92px !important;
+            height: 125px !important;
             border: none !important;
         }}
     </style>
     """, unsafe_allow_html=True)
+
     chg_str = f"{chg:+.1f}%"
     chg_emoji = "🟢" if chg > 0 else "🔴"
-    return st.button(f"{emoji} {tick}\n${price:,.2f} {chg_emoji}{chg_str}", key=key, width="stretch")
+    return st.button(f"{tick}\n{chg_emoji} {chg_str}\n{label}", key=key, width="stretch")
 
 # ====================== SIDEBAR ======================
 with st.sidebar:
@@ -304,12 +311,11 @@ if view_mode == "Color Cards":
     for i, row in enumerate(ticker_data_list):
         tick = row["Ticker"]
         label = row["Signal"]
-        curr = row["Price"]
         chg = row["Chg %"]
         strength = row["Strength"]
         col = cols[i % 4]
         with col.container(border=True):
-            if create_colored_button(tick, label, curr, chg, strength):
+            if create_colored_button(tick, label, chg, strength):
                 st.session_state.selected_ticker = tick
                 st.session_state.ticker_data = row["Data"]
 else:
