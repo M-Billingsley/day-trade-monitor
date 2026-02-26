@@ -306,17 +306,70 @@ for tick in TICKERS:
     except:
         pass
 
-# Display - Color Cards only (Sortable Table removed)
-cols = st.columns(4)
-for i, row in enumerate(ticker_data_list):
+# ====================== FULL COLORED CARDS (HTML version - reliable) ======================
+st.subheader("🚀 Trade Signals")
+
+html_cards = """
+<style>
+    .trade-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 14px;
+        margin-top: 10px;
+    }
+    .trade-card {
+        padding: 22px;
+        border-radius: 18px;
+        color: white;
+        text-align: center;
+        font-weight: 700;
+        font-size: 1.5rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+    }
+    .trade-card:hover {
+        transform: scale(1.04);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+    }
+</style>
+<div class="trade-grid">
+"""
+
+for row in ticker_data_list:
     tick = row["Ticker"]
     label = row["Signal"]
     strength = row["Strength"]
-    col = cols[i % 4]
-    with col:
-        if create_colored_button(tick, label, strength):
-            st.session_state.selected_ticker = tick
+    
+    if "STRONG BUY" in label:
+        bg = "#0f5132"
+    elif "BUY" in label:
+        bg = "#166534"
+    elif label == "SIT":
+        bg = "#854d0e"
+    else:
+        bg = "#991b1b"
+    
+    html_cards += f'''
+    <div class="trade-card" style="background-color: {bg};" onclick="window.location.href = '?selected={tick}'">
+        {tick}<br>
+        {label}<br>
+        {strength}/9
+    </div>
+    '''
+
+html_cards += "</div>"
+
+st.markdown(html_cards, unsafe_allow_html=True)
+
+# Handle card click
+if 'selected' in st.query_params:
+    selected_tick = st.query_params['selected']
+    for row in ticker_data_list:
+        if row["Ticker"] == selected_tick:
+            st.session_state.selected_ticker = selected_tick
             st.session_state.ticker_data = row["Data"]
+            st.rerun()
             
 # ====================== AUTO ALERTS ======================
 now_et = datetime.now(ZoneInfo("America/New_York"))
