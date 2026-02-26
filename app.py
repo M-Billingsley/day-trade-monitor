@@ -133,30 +133,21 @@ with st.sidebar:
     strategy_mode = st.selectbox("Strategy Mode", ["Balanced (more opportunities)", "Strict (higher win rate)"], index=0)
     is_strict = strategy_mode.startswith("Strict")
 
-    st.subheader("📲 Notifications")
-    tab1, tab2 = st.tabs(["📱 Twilio SMS", "✉️ Telegram"])
-    with tab1:
-        tw_sid = st.text_input("Account SID", type="password", value=st.session_state.get("twilio_sid", ""))
-        tw_token = st.text_input("Auth Token", type="password", value=st.session_state.get("twilio_token", ""))
-        tw_from = st.text_input("Twilio From (+1...)", value=st.session_state.get("twilio_from", ""))
-        tw_to = st.text_input("Your Phone (+1...)", value=st.session_state.get("twilio_to", ""))
-        if tw_sid and tw_token and tw_from and tw_to:
-            st.session_state.update({"twilio_sid": tw_sid, "twilio_token": tw_token, "twilio_from": tw_from, "twilio_to": tw_to})
-            st.success("✅ Twilio saved")
-    with tab2:
-        tg_token = st.text_input("Telegram Bot Token", type="password", value=st.session_state.get("telegram_token", ""))
-        tg_chat = st.text_input("Chat ID", value=st.session_state.get("telegram_chat_id", ""))
-        st.caption("Get from @BotFather and @userinfobot")
-        if tg_token and tg_chat:
-            st.session_state.update({"telegram_token": tg_token, "telegram_chat_id": tg_chat})
-            st.success("✅ Telegram saved")
-        if st.button("🔵 Send Test Telegram Now"):
-            try:
-                bot = TeleBot(st.session_state.telegram_token)
-                bot.send_message(st.session_state.telegram_chat_id, "✅ TEST SUCCESSFUL! Day Trade Monitor is ready 🚀")
-                st.success("✅ Test sent!")
-            except Exception as e:
-                st.error(f"Test failed: {str(e)[:80]}")
+        st.subheader("📲 Telegram Alerts")
+    tg_token = st.text_input("Telegram Bot Token", type="password", value=st.session_state.get("telegram_token", ""))
+    tg_chat = st.text_input("Chat ID", value=st.session_state.get("telegram_chat_id", ""))
+    st.caption("Get from @BotFather and @userinfobot")
+    if tg_token and tg_chat:
+        st.session_state.telegram_token = tg_token
+        st.session_state.telegram_chat_id = tg_chat
+        st.success("✅ Telegram saved")
+    if st.button("🔵 Send Test Telegram Now"):
+        try:
+            bot = TeleBot(st.session_state.telegram_token)
+            bot.send_message(st.session_state.telegram_chat_id, "✅ TEST SUCCESSFUL! Day Trade Monitor is ready 🚀")
+            st.success("✅ Test sent!")
+        except Exception as e:
+            st.error(f"Test failed: {str(e)[:80]}")
 
 # ====================== TITLE + REGIME + HEAT-MAP + ACCOUNT ======================
 st.title("Day Trade Monitor")
