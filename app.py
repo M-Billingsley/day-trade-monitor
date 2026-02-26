@@ -62,39 +62,37 @@ for prefix, section in [("twilio_", "twilio"), ("telegram_", "telegram")]:
             st.session_state[sess_key] = secrets[section][key]
 
 # ====================== COLORED BUTTONS ======================
-def create_colored_button(tick: str, label: str, chg: float, strength: int):
+def create_colored_button(tick: str, label: str, strength: int):
     key = f"btn_{label.lower()}_{tick}"
     if "STRONG BUY" in label:
-        bg = "#0f5132"  # Dark green
+        bg = "#0f5132"
     elif "BUY" in label:
-        bg = "#166534"  # Green
+        bg = "#166534"
     elif label == "SIT":
-        bg = "#854d0e"  # Orange
+        bg = "#854d0e"
     else:
-        bg = "#991b1b"  # Red
+        bg = "#991b1b"
 
     st.markdown(f"""
     <style>
         div[data-testid="stVerticalBlock"] > div:has(button[key="{key}"]) {{
             background-color: {bg} !important;
             border-radius: 16px !important;
-            padding: 16px !important;
-            border: 3px solid rgba(255,255,255,0.25) !important;
+            padding: 20px !important;
+            border: 3px solid rgba(255,255,255,0.3) !important;
         }}
         div.stButton > button[key="{key}"] {{
             background-color: transparent !important;
             color: white !important;
-            font-size: 1.35rem !important;
+            font-size: 1.4rem !important;
             font-weight: 700 !important;
-            height: 125px !important;
+            height: 110px !important;
             border: none !important;
         }}
     </style>
     """, unsafe_allow_html=True)
 
-    chg_str = f"{chg:+.1f}%"
-    chg_emoji = "🟢" if chg > 0 else "🔴"
-    return st.button(f"{tick}\n{chg_emoji} {chg_str}\n{label}", key=key, width="stretch")
+    return st.button(f"{tick}\n{label}\n{strength}/9", key=key, width="stretch")
 
 # ====================== SIDEBAR ======================
 with st.sidebar:
@@ -311,11 +309,10 @@ if view_mode == "Color Cards":
     for i, row in enumerate(ticker_data_list):
         tick = row["Ticker"]
         label = row["Signal"]
-        chg = row["Chg %"]
         strength = row["Strength"]
         col = cols[i % 4]
         with col.container(border=True):
-            if create_colored_button(tick, label, chg, strength):
+            if create_colored_button(tick, label, strength):
                 st.session_state.selected_ticker = tick
                 st.session_state.ticker_data = row["Data"]
 else:
