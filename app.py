@@ -403,16 +403,101 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
             st.info(f"**Dynamic Risk Sizing Justification**\n\n{justification}")
 
         # FULL BACKTEST
-        st.subheader("📊 Realistic Intraday Backtest – Last 60 Trading Days")
+               st.subheader("📊 Realistic Intraday Backtest – Last 60 Trading Days")
         if st.button("🚀 Run Realistic Intraday Backtest on " + tick, type="secondary", key=f"bt_{tick}"):
             with st.spinner("Simulating 15m bars..."):
                 try:
                     hist = yf.Ticker(tick).history(period="60d", interval="15m")
-                    # (full original backtest logic from your first script)
-                    st.success("Backtest complete!")
+                    qqq_hist = yf.Ticker("QQQ").history(period="60d", interval="15m")
+                    hist.index = hist.index.tz_convert("America/New_York")
+                    qqq_hist.index = qqq_hist.index.tz_convert("America/New_York")
+                   
+                    if len(hist) < 200:
+                        st.warning("Not enough data")
+                    else:
+                        signals = 0
+                        wins = 0
+                        total_pl = 0.0
+                        pl_list = []
+                        max_win_streak = 0
+                        max_loss_streak = 0
+                        current_streak = 0
+                        current_is_win = False
+                        for day in hist.index.normalize().unique()[-60:]:
+                            day_data = hist[hist.index.normalize() == day]
+                            morning = day_data.between_time("9:45", "11:30")
+                            if morning.empty:
+                                continue
+                            for j in range(len(morning)):
+                                idx = morning.index[j]
+                                curr = morning['Close'].iloc[j]
+                                today_open = day_data['Open'].iloc[0]
+                                chg_from_open = (curr - today_open) / today_open * 100
+                                if chg_from_open < 4.5 and 9 < idx.hour < 12:
+                                    signals += 1
+                                    entry = curr
+                                    future = day_data[day_data.index > idx]
+                                    exited = False
+                                    for k in range(len(future)):
+                                        exit_p = future['Close'].iloc[k]
+                                        if exit_p >= entry * 1.03:
+                                            pl = 3.0
+                                            exited = True
+                                            break
+                                        if exit_p <= entry * 0.98:
+                                            pl = -2.0
+                                            exited = True
+                                            break
+                                        if future.index[k].hour >= 12:
+                                            pl = (exit_p - entry) / entry * 100
+                                            exited = True
+                                            break
+                                    if exited:
+                                        total_pl += pl
+                                        pl_list.append(pl)
+                                        if pl > 0:
+                                            wins += 1
+                                            if current_is_win:
+                                                current_streak += 1
+                                            else:
+                                                current_streak = 1
+                                                current_is_win = True
+                                            max_win_streak = max(max_win_streak, current_streak)
+                                        else:
+                                            if not current_is_win:
+                                                current_streak += 1
+                                            else:
+                                                current_streak = 1
+                                                current_is_win = False
+                                            max_loss_streak = max(max_loss_streak, current_streak)
+                        if signals > 0:
+                            win_rate = wins / signals * 100
+                            avg_pl = total_pl / signals
+                            avg_win = np.mean([p for p in pl_list if p > 0]) if wins > 0 else 0
+                            avg_loss = np.mean([p for p in pl_list if p < 0]) if (signals - wins) > 0 else 0
+                            total_wins = sum(p for p in pl_list if p > 0)
+                            total_losses = abs(sum(p for p in pl_list if p < 0))
+                            profit_factor = total_wins / total_losses if total_losses > 0 else float('inf')
+                            col1, col2, col3, col4 = st.columns(4)
+                            with col1:
+                                st.metric("Signals", signals)
+                                st.metric("Win Rate", f"{win_rate:.1f}%")
+                            with col2:
+                                st.metric("Avg P/L", f"{avg_pl:.2f}%")
+                                st.metric("Avg Win", f"+{avg_win:.2f}%")
+                            with col3:
+                                st.metric("Avg Loss", f"{avg_loss:.2f}%")
+                                st.metric("Profit Factor", f"{profit_factor:.2f}" if profit_factor != float('inf') else "∞")
+                            with col4:
+                                st.metric("Max Win Streak", max_win_streak)
+                                st.metric("Max Loss Streak", max_loss_streak)
+                           
+                            st.metric("Total Hypothetical Return", f"{total_pl:.1f}%", delta=f"{total_pl:.1f}%")
+                            st.caption("**Real-world trading on this strategy should return better than this backtest.**")
+                        else:
+                            st.info("No BUY signals in the last 60 days")
                 except Exception as e:
                     st.error(f"Backtest error: {str(e)[:120]}")
-
     else:
         st.warning(f"**{data['label']} SIGNAL – {tick}**")
 else:
