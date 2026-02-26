@@ -19,12 +19,9 @@ st.set_page_config(
 )
 st.markdown("""
 <style>
-    div[role="radiogroup"] label {
-        font-size: 1.2rem !important;
-        font-weight: 600 !important;
-    }
-    div[role="radiogroup"] label[data-baseweb="radio"] {
-        color: #0d6efd !important;
+    .stColumn > div > div > div > button {
+        width: 100% !important;
+        margin-bottom: 8px !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -326,6 +323,15 @@ for idx, row in enumerate(ticker_data_list):
             st.session_state.selected_ticker = tick
             st.session_state.ticker_data = row["Data"]
             st.rerun()   # forces immediate update
+            
+# Handle query param click (fallback for direct URL access)
+if 'selected' in st.query_params:
+    selected = st.query_params['selected']
+    for row in ticker_data_list:
+        if row["Ticker"] == selected:
+            st.session_state.selected_ticker = selected
+            st.session_state.ticker_data = row["Data"]
+            st.rerun()
             
 # ====================== AUTO ALERTS ======================
 now_et = datetime.now(ZoneInfo("America/New_York"))
