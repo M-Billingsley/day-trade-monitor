@@ -68,6 +68,7 @@ for prefix, section in [("twilio_", "twilio"), ("telegram_", "telegram")]:
 # ====================== CLEAN FULL-COLOR CARDS ======================
 def create_colored_button(tick: str, label: str, strength: int):
     key = f"btn_{label.lower()}_{tick}"
+    
     if "STRONG BUY" in label:
         bg = "#0f5132"   # Dark green
     elif "BUY" in label:
@@ -79,20 +80,18 @@ def create_colored_button(tick: str, label: str, strength: int):
 
     st.markdown(f"""
     <style>
-        div[data-testid="stVerticalBlock"] > div:has(button[key="{key}"]) {{
+        button[key="{key}"] {{
             background-color: {bg} !important;
-            border-radius: 18px !important;
-            padding: 24px !important;
-            border: 3px solid rgba(255,255,255,0.25) !important;
-        }}
-        div.stButton > button[key="{key}"] {{
-            background-color: transparent !important;
             color: white !important;
-            font-size: 1.5rem !important;
+            font-size: 1.55rem !important;
             font-weight: 700 !important;
-            height: 130px !important;
-            border: none !important;
-            line-height: 1.3;
+            height: 135px !important;
+            border-radius: 18px !important;
+            border: 3px solid rgba(255,255,255,0.35) !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+        }}
+        button[key="{key}"]:hover {{
+            filter: brightness(1.1) !important;
         }}
     </style>
     """, unsafe_allow_html=True)
@@ -314,7 +313,7 @@ for i, row in enumerate(ticker_data_list):
     label = row["Signal"]
     strength = row["Strength"]
     col = cols[i % 4]
-    with col.container(border=True):
+    with col:
         if create_colored_button(tick, label, strength):
             st.session_state.selected_ticker = tick
             st.session_state.ticker_data = row["Data"]
