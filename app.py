@@ -133,7 +133,7 @@ with st.sidebar:
     strategy_mode = st.selectbox("Strategy Mode", ["Balanced (more opportunities)", "Strict (higher win rate)"], index=0)
     is_strict = strategy_mode.startswith("Strict")
 
-        st.subheader("📲 Telegram Alerts")
+    st.subheader("📲 Telegram Alerts")
     tg_token = st.text_input("Telegram Bot Token", type="password", value=st.session_state.get("telegram_token", ""))
     tg_chat = st.text_input("Chat ID", value=st.session_state.get("telegram_chat_id", ""))
     st.caption("Get from @BotFather and @userinfobot")
