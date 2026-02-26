@@ -307,7 +307,7 @@ for tick in TICKERS:
     except:
         pass
 
-# Display
+# Display - Color Cards only (Sortable Table removed)
 cols = st.columns(4)
 for i, row in enumerate(ticker_data_list):
     tick = row["Ticker"]
@@ -318,27 +318,7 @@ for i, row in enumerate(ticker_data_list):
         if create_colored_button(tick, label, strength):
             st.session_state.selected_ticker = tick
             st.session_state.ticker_data = row["Data"]
-else:
-    df = pd.DataFrame(ticker_data_list)[["Ticker", "Price", "Chg %", "Strength", "Signal"]]
-    def highlight_row(row):
-        if "STRONG BUY" in row["Signal"]:
-            return ['background-color: #15803d; color: white'] * len(row)
-        elif "BUY" in row["Signal"]:
-            return ['background-color: #16a34a; color: white'] * len(row)
-        elif "SIT" in row["Signal"]:
-            return ['background-color: #ca8a04; color: white'] * len(row)
-        else:
-            return ['background-color: #dc2626; color: white'] * len(row)
-    styled_df = df.style.apply(highlight_row, axis=1)
-    selection = st.dataframe(styled_df, use_container_width=True, hide_index=True, on_select="rerun", selection_mode="single-row")
-    if len(selection["selection"]["rows"]) > 0:
-        idx = selection["selection"]["rows"][0]
-        selected_tick = df.iloc[idx]["Ticker"]
-        selected_data = next(item for item in ticker_data_list if item["Ticker"] == selected_tick)
-        if st.button(f"📌 Load Trade Plan for {selected_tick}", type="primary"):
-            st.session_state.selected_ticker = selected_tick
-            st.session_state.ticker_data = selected_data["Data"]
-
+            
 # ====================== AUTO ALERTS ======================
 now_et = datetime.now(ZoneInfo("America/New_York"))
 if dt_time(9, 30) <= now_et.time() <= dt_time(12, 0):
