@@ -60,33 +60,35 @@ for prefix, section in [("twilio_", "twilio"), ("telegram_", "telegram")]:
         sess_key = f"{prefix}{key}"
         if sess_key not in st.session_state:
             st.session_state[sess_key] = secrets[section][key]
+
 # ====================== CLEAN COLORED BUTTONS ======================
 def create_colored_button(tick: str, label: str, strength: int):
     key = f"btn_{label.lower()}_{tick}"
     if "STRONG BUY" in label:
-        bg = "#0f5132"
+        bg = "#0f5132"   # Dark green
     elif "BUY" in label:
-        bg = "#166534"
+        bg = "#166534"   # Green
     elif label == "SIT":
-        bg = "#854d0e"
+        bg = "#854d0e"   # Orange
     else:
-        bg = "#991b1b"
+        bg = "#991b1b"   # Red
 
     st.markdown(f"""
     <style>
         div[data-testid="stVerticalBlock"] > div:has(button[key="{key}"]) {{
             background-color: {bg} !important;
             border-radius: 18px !important;
-            padding: 20px !important;
-            border: 3px solid rgba(255,255,255,0.25) !important;
+            padding: 24px !important;
+            border: 3px solid rgba(255,255,255,0.3) !important;
         }}
         div.stButton > button[key="{key}"] {{
             background-color: transparent !important;
             color: white !important;
-            font-size: 1.45rem !important;
+            font-size: 1.5rem !important;
             font-weight: 700 !important;
-            height: 120px !important;
+            height: 125px !important;
             border: none !important;
+            line-height: 1.3;
         }}
     </style>
     """, unsafe_allow_html=True)
