@@ -173,7 +173,7 @@ else:
 st.markdown(f"<h3 style='text-align:center; background:#1e3a8a; color:white; padding:14px; border-radius:12px; margin-bottom:12px;'>{regime} (QQQ {qqq_chg:+.1f}%)</h3>", unsafe_allow_html=True)
 # ====================== FAMILY-FRIENDLY TELEGRAM SETUP GUIDE ======================
 st.markdown("### 👨‍👩‍👧‍👦 Welcome to Day Trade Monitor – Family Edition")
-with st.expander("🆕 New to Telegram? Full Setup Guide (3 minutes)", expanded=True):
+with st.expander("🆕 New to Telegram? Full Setup Guide (3 minutes)", expanded=False):
     st.markdown("""
     **Step-by-step (do this once):**
 
