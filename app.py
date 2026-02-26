@@ -18,44 +18,26 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ====================== EARLY STRONG CSS (FORCES COLORS + CLEAN SIZE) ======================
+# ====================== GLOBAL STYLING (FORCES COLORS + CLEAN SIZE) ======================
 st.markdown("""
 <style>
-    /* Hide unwanted toolbar */
+    /* Hide toolbar */
     header, footer, [data-testid="stToolbar"], [data-testid="stHeader"], .stAppDeployButton {
         display: none !important;
     }
-    
-    /* Trade card grid */
-    .trade-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(205px, 1fr));
-        gap: 12px;
-        margin-top: 12px;
+    button {
+        width: 100% !important;
+        height: 118px !important;
+        font-size: 1.45rem !important;
+        font-weight: 700 !important;
+        border-radius: 16px !important;
+        border: none !important;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.35) !important;
+        margin-bottom: 10px !important;
     }
-    .trade-card {
-        padding: 20px;
-        border-radius: 16px;
-        color: white;
-        text-align: center;
-        font-weight: 700;
-        font-size: 1.48rem;
-        cursor: pointer;
-        transition: all 0.2s;
-        box-shadow: 0 6px 16px rgba(0,0,0,0.35);
-        height: 118px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
+    button:hover {
+        transform: scale(1.03) !important;
     }
-    .trade-card:hover {
-        transform: scale(1.04);
-        box-shadow: 0 10px 25px rgba(0,0,0,0.45);
-    }
-    .strong-buy { background-color: #0f5132 !important; }   /* Dark green */
-    .buy       { background-color: #166534 !important; }   /* Green */
-    .sit       { background-color: #854d0e !important; }   /* Orange */
-    .short     { background-color: #991b1b !important; }   /* Red */
 </style>
 """, unsafe_allow_html=True)
 
@@ -88,6 +70,11 @@ for prefix, section in [("twilio_", "twilio"), ("telegram_", "telegram")]:
         sess_key = f"{prefix}{key}"
         if sess_key not in st.session_state:
             st.session_state[sess_key] = secrets[section][key]
+
+# ====================== COLORED BUTTON FUNCTION ======================
+def create_colored_button(tick: str, label: str, strength: int):
+    key = f"btn_{label.lower().replace(' ', '_')}_{tick}"
+    return st.button(f"{tick}\n{label}\n{strength}/9", key=key, use_container_width=True)
 
 # ====================== SIDEBAR ======================
 with st.sidebar:
@@ -298,33 +285,37 @@ for tick in TICKERS:
     except:
         pass
 
-# ====================== COLORED CARDS (HTML - NOW FORCED WITH EARLY CSS) ======================
-html = '<div class="trade-grid">'
+# ====================== FORCE COLORED BUTTONS (THIS IS THE KEY PART) ======================
+color_css = "<style>"
 for row in ticker_data_list:
     tick = row["Ticker"]
     label = row["Signal"]
-    strength = row["Strength"]
-    
+    key = f"btn_{label.lower().replace(' ', '_')}_{tick}"
     if "STRONG BUY" in label:
-        css_class = "strong-buy"
+        bg = "#0f5132"  # Dark green
     elif "BUY" in label:
-        css_class = "buy"
+        bg = "#166534"  # Green
     elif label == "SIT":
-        css_class = "sit"
+        bg = "#854d0e"  # Orange
     else:
-        css_class = "short"
-    
-    html += f'''
-    <div class="trade-card {css_class}" onclick="window.parent.location.href='?selected={tick}'">
-        {tick}<br>
-        {label}<br>
-        {strength}/9
-    </div>
-    '''
-html += '</div>'
-st.markdown(html, unsafe_allow_html=True)
+        bg = "#991b1b"  # Red
+    color_css += f'button[key="{key}"] {{ background-color: {bg} !important; color: white !important; }}\n'
+color_css += "</style>"
+st.markdown(color_css, unsafe_allow_html=True)
 
-# Handle card click
+# ====================== COLORED BUTTON GRID ======================
+cols = st.columns(7)
+for i, row in enumerate(ticker_data_list):
+    tick = row["Ticker"]
+    label = row["Signal"]
+    strength = row["Strength"]
+    with cols[i % 7]:
+        if create_colored_button(tick, label, strength):
+            st.session_state.selected_ticker = tick
+            st.session_state.ticker_data = row["Data"]
+            st.rerun()
+
+# Handle direct URL click
 if 'selected' in st.query_params:
     selected_tick = st.query_params['selected']
     for row in ticker_data_list:
@@ -434,7 +425,6 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
 
             st.info(f"**Dynamic Risk Sizing Justification**\n\n{justification}")
 
-        # Persistent Backtest
         st.subheader("📊 Realistic Intraday Backtest – Last 60 Trading Days")
         backtest_key = f"backtest_{tick}"
         if st.button("🚀 Run Realistic Intraday Backtest on " + tick, type="secondary", key=f"bt_{tick}"):
@@ -444,7 +434,6 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
                     qqq_hist = yf.Ticker("QQQ").history(period="60d", interval="15m")
                     hist.index = hist.index.tz_convert("America/New_York")
                     qqq_hist.index = qqq_hist.index.tz_convert("America/New_York")
-                   
                     if len(hist) < 200:
                         st.warning("Not enough data")
                     else:
