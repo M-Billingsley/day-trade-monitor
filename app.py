@@ -18,7 +18,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ====================== BLUE BUTTONS + IMPROVED CARD BUTTONS ======================
+# ====================== STRONG GLOBAL STYLING FOR PERFECT COLORED CARDS ======================
 st.markdown("""
 <style>
     div[role="radiogroup"] label {
@@ -28,15 +28,38 @@ st.markdown("""
     div[role="radiogroup"] label[data-baseweb="radio"] {
         color: #0d6efd !important;
     }
-    button[kind="primary"] {
-        background-color: #0d6efd !important;
-        color: white !important;
-        width: 100% !important;
-        margin-bottom: 12px !important;
-        font-size: 1.55rem !important;
-        height: 135px !important;
-        border-radius: 18px !important;
+    button[kind="primary"] { background-color: #0d6efd !important; color: white !important; }
+
+    /* COLORED TRADE CARDS - GUARANTEED TO SHOW COLORS */
+    .trade-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 14px;
+        margin-top: 10px;
     }
+    .trade-card {
+        padding: 22px;
+        border-radius: 18px;
+        color: white;
+        text-align: center;
+        font-weight: 700;
+        font-size: 1.55rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+        height: 135px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    .trade-card:hover {
+        transform: scale(1.04);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+    }
+    .strong-buy { background-color: #0f5132 !important; }   /* Dark green */
+    .buy       { background-color: #166534 !important; }   /* Green */
+    .sit       { background-color: #854d0e !important; }   /* Orange */
+    .short     { background-color: #991b1b !important; }   /* Red */
 </style>
 """, unsafe_allow_html=True)
 
@@ -70,46 +93,13 @@ for prefix, section in [("twilio_", "twilio"), ("telegram_", "telegram")]:
         if sess_key not in st.session_state:
             st.session_state[sess_key] = secrets[section][key]
 
-# ====================== STRONG COLORED CARDS ======================
-def create_colored_button(tick: str, label: str, strength: int):
-    key = f"btn_{label.lower()}_{tick}"
-    
-    if "STRONG BUY" in label:
-        bg = "#0f5132"   # Dark green
-    elif "BUY" in label:
-        bg = "#166534"   # Green
-    elif label == "SIT":
-        bg = "#854d0e"   # Orange
-    else:
-        bg = "#991b1b"   # Red
-
-    st.markdown(f"""
-    <style>
-        button[key="{key}"] {{
-            background-color: {bg} !important;
-            color: white !important;
-            font-size: 1.55rem !important;
-            font-weight: 700 !important;
-            height: 135px !important;
-            border-radius: 18px !important;
-            border: none !important;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4) !important;
-        }}
-        button[key="{key}"]:hover {{
-            filter: brightness(1.15) !important;
-        }}
-    </style>
-    """, unsafe_allow_html=True)
-
-    return st.button(f"{tick}\n{label}\n{strength}/9", key=key, use_container_width=True)
-
 # ====================== SIDEBAR ======================
 with st.sidebar:
     st.header("📈 Live Market Data")
     if st.button("🔄 Force Refresh Now (All Data)", type="primary", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
-    st.caption("Auto-refresh every 10 seconds is ON below")
+    st.caption("Auto-refresh every 10 seconds during market hours only")
     st.subheader("Major Indices")
     for sym, name in zip(["^DJI", "^IXIC", "^GSPC"], ["Dow", "Nasdaq", "S&P 500"]):
         try:
@@ -240,9 +230,9 @@ with refresh_col:
     if st.button("🔄 Refresh All Data", type="primary", width="stretch"):
         st.rerun()
 with auto_col:
-    auto_refresh = st.checkbox("Auto-refresh every 10 seconds", value=True)
+    auto_refresh = st.checkbox("Auto-refresh market data every 10 seconds", value=True, key="auto_refresh_checkbox")
 
-# ====================== SIGNALS – BUILD DATA ======================
+# ====================== SIGNALS ======================
 st.subheader("🚀 Trade Signals")
 ticker_data_list = []
 qqq_hist = get_history("QQQ", "5d")
@@ -311,20 +301,35 @@ for tick in TICKERS:
     except:
         pass
 
-# ====================== FIXED COLORED CARDS – 7-COLUMN GRID (NO HTML SANITIZER ISSUES) ======================
-cols = st.columns(7)
-for i, row in enumerate(ticker_data_list):
+# ====================== COLORED CLICKABLE CARDS (HTML - GUARANTEED COLORS) ======================
+html = """
+<div class="trade-grid">
+"""
+for row in ticker_data_list:
     tick = row["Ticker"]
     label = row["Signal"]
     strength = row["Strength"]
     
-    with cols[i % 7]:
-        if create_colored_button(tick, label, strength):
-            st.session_state.selected_ticker = tick
-            st.session_state.ticker_data = row["Data"]
-            st.rerun()
+    if "STRONG BUY" in label:
+        css_class = "strong-buy"
+    elif "BUY" in label:
+        css_class = "buy"
+    elif label == "SIT":
+        css_class = "sit"
+    else:
+        css_class = "short"
+    
+    html += f'''
+    <div class="trade-card {css_class}" onclick="window.parent.location.href='?selected={tick}'">
+        {tick}<br>
+        {label}<br>
+        {strength}/9
+    </div>
+    '''
+html += "</div>"
+st.markdown(html, unsafe_allow_html=True)
 
-# Fallback for direct URL clicks (shareable links)
+# Handle card click
 if 'selected' in st.query_params:
     selected_tick = st.query_params['selected']
     for row in ticker_data_list:
@@ -356,7 +361,7 @@ if dt_time(9, 30) <= now_et.time() <= dt_time(12, 0):
                 st.session_state[key] = time.time()
                 st.toast(f"📲 Alert sent for {row['Ticker']}", icon="🚀")
 
-# ====================== TRADE PLAN + DIAGNOSTICS + BACKTEST ======================
+# ====================== TRADE PLAN + DIAGNOSTICS + PERSISTENT BACKTEST ======================
 st.markdown("---")
 st.subheader("📋 Trade Plan + Diagnostics")
 if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
@@ -366,7 +371,6 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
 
     st.success(f"🚀 **{data['label']} – {tick}**")
 
-    # 9 Trade Gates — ALWAYS VISIBLE
     st.subheader("🔍 9 Trade Gates – Pass/Fail")
     dcols = st.columns(3)
     with dcols[0]:
@@ -380,7 +384,6 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
         st.metric("MACD + Histogram", "✅ PASS" if data["histogram_ok"] else "❌ FAIL")
         st.metric("QQQ Rel Strength", "✅ PASS" if data["rel_strength_ok"] else "❌ FAIL")
 
-    # Chart + Full Execution Plan + Backtest (only for BUY or override)
     if "BUY" in data["label"] or (override and data["label"] != "SHORT"):
         st.subheader(f"📊 {tick} – 5-Day Price Action")
         try:
@@ -397,7 +400,6 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
         except:
             st.caption("Plotly chart unavailable")
 
-        # Dynamic Risk + Execution
         if "STRONG BUY" in data["label"]:
             dynamic_risk_pct = 2.0
             justification = "✅ **STRONG BUY** (9/9 conditions met) → Full conviction = **2.0%** account risk"
@@ -437,8 +439,9 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
 
             st.info(f"**Dynamic Risk Sizing Justification**\n\n{justification}")
 
-        # Backtest
+        # PERSISTENT BACKTEST
         st.subheader("📊 Realistic Intraday Backtest – Last 60 Trading Days")
+        backtest_key = f"backtest_{tick}"
         if st.button("🚀 Run Realistic Intraday Backtest on " + tick, type="secondary", key=f"bt_{tick}"):
             with st.spinner("Simulating 15m bars..."):
                 try:
@@ -461,8 +464,7 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
                         for day in hist.index.normalize().unique()[-60:]:
                             day_data = hist[hist.index.normalize() == day]
                             morning = day_data.between_time("9:45", "11:30")
-                            if morning.empty:
-                                continue
+                            if morning.empty: continue
                             for j in range(len(morning)):
                                 idx = morning.index[j]
                                 curr = morning['Close'].iloc[j]
@@ -513,26 +515,39 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
                             total_wins = sum(p for p in pl_list if p > 0)
                             total_losses = abs(sum(p for p in pl_list if p < 0))
                             profit_factor = total_wins / total_losses if total_losses > 0 else float('inf')
-                            col1, col2, col3, col4 = st.columns(4)
-                            with col1:
-                                st.metric("Signals", signals)
-                                st.metric("Win Rate", f"{win_rate:.1f}%")
-                            with col2:
-                                st.metric("Avg P/L", f"{avg_pl:.2f}%")
-                                st.metric("Avg Win", f"+{avg_win:.2f}%")
-                            with col3:
-                                st.metric("Avg Loss", f"{avg_loss:.2f}%")
-                                st.metric("Profit Factor", f"{profit_factor:.2f}" if profit_factor != float('inf') else "∞")
-                            with col4:
-                                st.metric("Max Win Streak", max_win_streak)
-                                st.metric("Max Loss Streak", max_loss_streak)
-                           
-                            st.metric("Total Hypothetical Return", f"{total_pl:.1f}%", delta=f"{total_pl:.1f}%")
-                            st.caption("**Real-world trading on this strategy should return better than this backtest.**")
-                        else:
-                            st.info("No BUY signals in the last 60 days")
+                            results = {
+                                "signals": signals,
+                                "win_rate": round(win_rate, 1),
+                                "avg_pl": round(avg_pl, 2),
+                                "avg_win": round(avg_win, 2),
+                                "avg_loss": round(avg_loss, 2),
+                                "profit_factor": round(profit_factor, 2) if profit_factor != float('inf') else "∞",
+                                "max_win_streak": max_win_streak,
+                                "max_loss_streak": max_loss_streak,
+                                "total_pl": round(total_pl, 1)
+                            }
+                            st.session_state[backtest_key] = results
                 except Exception as e:
                     st.error(f"Backtest error: {str(e)[:120]}")
+
+        # SHOW SAVED RESULTS (persists forever until new run)
+        if backtest_key in st.session_state and st.session_state[backtest_key]:
+            r = st.session_state[backtest_key]
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("Signals", r["signals"])
+                st.metric("Win Rate", f"{r['win_rate']}%")
+            with col2:
+                st.metric("Avg P/L", f"{r['avg_pl']}%")
+                st.metric("Avg Win", f"+{r['avg_win']}%")
+            with col3:
+                st.metric("Avg Loss", f"{r['avg_loss']}%")
+                st.metric("Profit Factor", r["profit_factor"])
+            with col4:
+                st.metric("Max Win Streak", r["max_win_streak"])
+                st.metric("Max Loss Streak", r["max_loss_streak"])
+            st.metric("Total Hypothetical Return", f"{r['total_pl']}%", delta=f"{r['total_pl']}%")
+            st.caption("**Real-world trading on this strategy should return better than this backtest.**")
     else:
         st.warning(f"**{data['label']} SIGNAL – {tick}**")
 else:
@@ -549,8 +564,6 @@ if os.path.exists(CSV_FILE):
         st.success("✅ No open positions – Account Heat: 0%")
     else:
         heat_rows = []
-        total_exposure = 0.0
-        total_estimated_risk = 0.0
         for _, trade in open_trades.iterrows():
             tick = trade["Ticker"]
             shares = float(trade["Shares"])
@@ -559,9 +572,6 @@ if os.path.exists(CSV_FILE):
                 curr_price = yf.Ticker(tick).history(period="1d")['Close'].iloc[-1]
                 unreal_pnl = shares * (curr_price - entry)
                 exposure = shares * curr_price
-                est_risk = exposure * 0.02
-                total_exposure += exposure
-                total_estimated_risk += est_risk
                 heat_rows.append({
                     "Ticker": tick,
                     "Shares": int(shares),
@@ -574,8 +584,6 @@ if os.path.exists(CSV_FILE):
             except:
                 heat_rows.append({"Ticker": tick, "Shares": int(shares), "Entry": f"${entry:,.2f}", "Current": "—", "Unreal P/L $": "—", "Unreal P/L %": "—", "Exposure %": "—"})
         heat_df = pd.DataFrame(heat_rows)
-        total_risk_pct = total_estimated_risk / account_size * 100
-        st.metric(label="Total Account Heat", value=f"{total_risk_pct:.1f}%")
         st.dataframe(heat_df, use_container_width=True, hide_index=True)
 
 # ====================== NEWS, RULES, PSYCHOLOGY, TRADE LOG ======================
@@ -667,11 +675,14 @@ if st.button("📨 Send Morning Summary to Telegram", type="primary", use_contai
         except Exception as e:
             st.error(f"Failed: {str(e)[:80]}")
 
-# ====================== AUTO REFRESH ======================
+# ====================== SMART AUTO-REFRESH (Market hours only + no full reset) ======================
 if auto_refresh:
-    if 'last_refresh' not in st.session_state:
-        st.session_state.last_refresh = time.time()
-    if time.time() - st.session_state.last_refresh >= 10:
-        st.session_state.last_refresh = time.time()
-        st.cache_data.clear()
-        st.rerun()
+    now_et = datetime.now(ZoneInfo("America/New_York"))
+    market_open = dt_time(9, 30) <= now_et.time() <= dt_time(16, 0)
+    if market_open:
+        if 'last_refresh' not in st.session_state:
+            st.session_state.last_refresh = time.time()
+        if time.time() - st.session_state.last_refresh >= 10:
+            st.session_state.last_refresh = time.time()
+            # NO cache_data.clear() → backtest + selected ticker stay!
+            st.rerun()
