@@ -234,7 +234,7 @@ with auto_col:
     auto_refresh = st.checkbox("Auto-refresh every 10 seconds", value=True)
 
 # ====================== SIGNALS ======================
-st.subheader("🚀 Trade Signals")
+
 # Only Color Cards view (Sortable Table removed)
 ticker_data_list = []
 qqq_hist = get_history("QQQ", "5d")
