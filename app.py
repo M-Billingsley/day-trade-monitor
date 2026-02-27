@@ -239,7 +239,7 @@ with auto_col:
 # ====================== SIGNALS ======================
 st.subheader("🚀 Trade Signals")
 
-# ====================== BUILD DATA (fixes NameError) ======================
+# ====================== BUILD DATA ======================
 ticker_data_list = []
 qqq_hist = get_history("QQQ", "5d")
 qqq_open = qqq_hist['Open'].iloc[-1] if not qqq_hist.empty else 0
@@ -307,7 +307,7 @@ for tick in TICKERS:
     except:
         pass
 
-# ====================== LARGE VERTICAL COLORED BUTTONS ======================
+# ====================== VERTICAL BUTTONS WITH SMALL COLORED INDICATOR ======================
 cols = st.columns(7)
 for i, row in enumerate(ticker_data_list):
     tick = row["Ticker"]
@@ -315,21 +315,19 @@ for i, row in enumerate(ticker_data_list):
     strength = row["Strength"]
     key = f"btn_{label.lower().replace(' ', '_')}_{tick}"
     
-    # Full background color
+    # Small color indicator (emoji)
     if "STRONG BUY" in label:
-        bg = "#0f5132"   # Dark green
+        color_dot = "🟢"
     elif "BUY" in label:
-        bg = "#166534"   # Green
+        color_dot = "🟡"
     elif label == "SIT":
-        bg = "#854d0e"   # Orange
+        color_dot = "🟠"
     else:
-        bg = "#991b1b"   # Red
+        color_dot = "🔴"
     
     st.markdown(f"""
     <style>
         button[key="{key}"] {{
-            background-color: {bg} !important;
-            color: white !important;
             height: 142px !important;
             font-size: 1.48rem !important;
             line-height: 1.3 !important;
@@ -341,7 +339,7 @@ for i, row in enumerate(ticker_data_list):
     """, unsafe_allow_html=True)
     
     with cols[i % 7]:
-        if st.button(f"{tick}\n{label}\n{strength}/9", key=key, use_container_width=True):
+        if st.button(f"{color_dot}\n{tick}\n{label}\n{strength}/9", key=key, use_container_width=True):
             st.session_state.selected_ticker = tick
             st.session_state.ticker_data = row["Data"]
             st.rerun()
