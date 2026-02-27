@@ -239,7 +239,7 @@ with auto_col:
 # ====================== SIGNALS ======================
 st.subheader("🚀 Trade Signals")
 
-# ====================== BUILD SIGNALS DATA ======================
+# ====================== BUILD DATA (fixes NameError) ======================
 ticker_data_list = []
 qqq_hist = get_history("QQQ", "5d")
 qqq_open = qqq_hist['Open'].iloc[-1] if not qqq_hist.empty else 0
@@ -307,80 +307,41 @@ for tick in TICKERS:
     except:
         pass
 
-# ====================== COLORED CARDS (Ticker top, Signal middle, X/9 bottom) ======================
-st.markdown("""
-<style>
-    .trade-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(205px, 1fr));
-        gap: 14px;
-        margin-top: 12px;
-    }
-    .trade-card {
-        padding: 18px 12px;
-        border-radius: 18px;
-        color: white;
-        text-align: center;
-        font-weight: 700;
-        cursor: pointer;
-        transition: all 0.25s;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.4);
-        height: 130px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-    }
-    .trade-card:hover {
-        transform: scale(1.05);
-        box-shadow: 0 12px 30px rgba(0,0,0,0.5);
-    }
-    .trade-card .ticker {
-        font-size: 1.75rem;
-        line-height: 1.1;
-        margin-bottom: 4px;
-    }
-    .trade-card .signal {
-        font-size: 1.32rem;
-        line-height: 1.1;
-        margin-bottom: 2px;
-    }
-    .trade-card .strength {
-        font-size: 1.15rem;
-        opacity: 0.95;
-    }
-    .strong-buy { background-color: #0f5132 !important; }
-    .buy       { background-color: #166534 !important; }
-    .sit       { background-color: #854d0e !important; }
-    .short     { background-color: #991b1b !important; }
-</style>
-""", unsafe_allow_html=True)
-
-html = '<div class="trade-grid">'
-for row in ticker_data_list:
+# ====================== BIG COLORED BUTTONS (ticker on top line, signal middle, X/9 bottom) ======================
+cols = st.columns(7)
+for i, row in enumerate(ticker_data_list):
     tick = row["Ticker"]
     label = row["Signal"]
     strength = row["Strength"]
+    key = f"btn_{label.lower().replace(' ', '_')}_{tick}"
     
     if "STRONG BUY" in label:
-        css_class = "strong-buy"
+        bg = "#0f5132"
     elif "BUY" in label:
-        css_class = "buy"
+        bg = "#166534"
     elif label == "SIT":
-        css_class = "sit"
+        bg = "#854d0e"
     else:
-        css_class = "short"
+        bg = "#991b1b"
     
-    html += f'''
-    <div class="trade-card {css_class}" onclick="window.parent.location.href='?selected={tick}'">
-        <div class="ticker">{tick}</div>
-        <div class="signal">{label}</div>
-        <div class="strength">{strength}/9</div>
-    </div>
-    '''
-html += '</div>'
-st.markdown(html, unsafe_allow_html=True)
+    st.markdown(f"""
+    <style>
+        button[key="{key}"] {{
+            background-color: {bg} !important;
+            color: white !important;
+            font-size: 1.45rem !important;
+            height: 125px !important;
+        }}
+    </style>
+    """, unsafe_allow_html=True)
+    
+    with cols[i % 7]:
+        if st.button(f"{tick}\n{label}\n{strength}/9", key=key, use_container_width=True):
+            st.session_state.selected_ticker = tick
+            st.session_state.ticker_data = row["Data"]
+            st.rerun()
 
-# Handle card click
+# Handle direct URL click (optional)
 if 'selected' in st.query_params:
     selected_tick = st.query_params['selected']
     for row in ticker_data_list:
@@ -389,6 +350,7 @@ if 'selected' in st.query_params:
             st.session_state.ticker_data = row["Data"]
             st.rerun()
             break
+
 # ====================== AUTO ALERTS ======================
 now_et = datetime.now(ZoneInfo("America/New_York"))
 if dt_time(9, 30) <= now_et.time() <= dt_time(12, 0):
