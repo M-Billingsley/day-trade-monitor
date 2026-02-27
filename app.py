@@ -239,7 +239,7 @@ with auto_col:
 # ====================== SIGNALS ======================
 st.subheader("🚀 Trade Signals")
 
-# ====================== BUILD DATA (required to avoid NameError) ======================
+# ====================== BUILD DATA ======================
 ticker_data_list = []
 qqq_hist = get_history("QQQ", "5d")
 qqq_open = qqq_hist['Open'].iloc[-1] if not qqq_hist.empty else 0
@@ -307,7 +307,7 @@ for tick in TICKERS:
     except:
         pass
 
-# ====================== LARGE BUTTONS WITH SMALL COLOR CODING (emoji inside) ======================
+# ====================== VERTICAL COLORED BUTTONS (Ticker top, Signal middle, X/9 bottom) ======================
 cols = st.columns(7)
 for i, row in enumerate(ticker_data_list):
     tick = row["Ticker"]
@@ -315,30 +315,30 @@ for i, row in enumerate(ticker_data_list):
     strength = row["Strength"]
     key = f"btn_{label.lower().replace(' ', '_')}_{tick}"
     
-    # Small color coding inside the button (emoji)
     if "STRONG BUY" in label:
-        emoji = "🟢"
+        bg = "#0f5132"   # Dark green
     elif "BUY" in label:
-        emoji = "🟡"
+        bg = "#166534"   # Green
     elif label == "SIT":
-        emoji = "🟠"
+        bg = "#854d0e"   # Orange
     else:
-        emoji = "🔴"
+        bg = "#991b1b"   # Red
     
     st.markdown(f"""
     <style>
         button[key="{key}"] {{
-            height: 135px !important;
+            background-color: {bg} !important;
+            color: white !important;
+            height: 138px !important;
             font-size: 1.48rem !important;
-            font-weight: 700 !important;
-            border-radius: 18px !important;
-            box-shadow: 0 6px 18px rgba(0,0,0,0.35) !important;
+            line-height: 1.25 !important;
+            padding: 8px 12px !important;
         }}
     </style>
     """, unsafe_allow_html=True)
     
     with cols[i % 7]:
-        if st.button(f"{emoji} {tick}\n{label}\n{strength}/9", key=key, use_container_width=True):
+        if st.button(f"{tick}\n{label}\n{strength}/9", key=key, use_container_width=True):
             st.session_state.selected_ticker = tick
             st.session_state.ticker_data = row["Data"]
             st.rerun()
