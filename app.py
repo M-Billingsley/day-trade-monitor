@@ -239,7 +239,7 @@ with auto_col:
 # ====================== SIGNALS ======================
 st.subheader("🚀 Trade Signals")
 
-# ====================== BUILD DATA (fixes NameError) ======================
+# ====================== BUILD DATA (required to avoid NameError) ======================
 ticker_data_list = []
 qqq_hist = get_history("QQQ", "5d")
 qqq_open = qqq_hist['Open'].iloc[-1] if not qqq_hist.empty else 0
@@ -307,7 +307,7 @@ for tick in TICKERS:
     except:
         pass
 
-# ====================== BIG COLORED BUTTONS (ticker on top line, signal middle, X/9 bottom) ======================
+# ====================== LARGE BUTTONS WITH SMALL COLOR CODING (emoji inside) ======================
 cols = st.columns(7)
 for i, row in enumerate(ticker_data_list):
     tick = row["Ticker"]
@@ -315,33 +315,35 @@ for i, row in enumerate(ticker_data_list):
     strength = row["Strength"]
     key = f"btn_{label.lower().replace(' ', '_')}_{tick}"
     
+    # Small color coding inside the button (emoji)
     if "STRONG BUY" in label:
-        bg = "#0f5132"
+        emoji = "🟢"
     elif "BUY" in label:
-        bg = "#166534"
+        emoji = "🟡"
     elif label == "SIT":
-        bg = "#854d0e"
+        emoji = "🟠"
     else:
-        bg = "#991b1b"
+        emoji = "🔴"
     
     st.markdown(f"""
     <style>
         button[key="{key}"] {{
-            background-color: {bg} !important;
-            color: white !important;
-            font-size: 1.45rem !important;
-            height: 125px !important;
+            height: 135px !important;
+            font-size: 1.48rem !important;
+            font-weight: 700 !important;
+            border-radius: 18px !important;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.35) !important;
         }}
     </style>
     """, unsafe_allow_html=True)
     
     with cols[i % 7]:
-        if st.button(f"{tick}\n{label}\n{strength}/9", key=key, use_container_width=True):
+        if st.button(f"{emoji} {tick}\n{label}\n{strength}/9", key=key, use_container_width=True):
             st.session_state.selected_ticker = tick
             st.session_state.ticker_data = row["Data"]
             st.rerun()
 
-# Handle direct URL click (optional)
+# Handle direct URL click
 if 'selected' in st.query_params:
     selected_tick = st.query_params['selected']
     for row in ticker_data_list:
