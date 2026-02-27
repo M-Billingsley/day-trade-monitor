@@ -239,7 +239,7 @@ with auto_col:
 # ====================== SIGNALS ======================
 st.subheader("🚀 Trade Signals")
 
-# ====================== BUILD DATA ======================
+# ====================== BUILD DATA (fixes NameError) ======================
 ticker_data_list = []
 qqq_hist = get_history("QQQ", "5d")
 qqq_open = qqq_hist['Open'].iloc[-1] if not qqq_hist.empty else 0
@@ -307,7 +307,7 @@ for tick in TICKERS:
     except:
         pass
 
-# ====================== VERTICAL COLORED BUTTONS (Ticker top, Signal middle, X/9 bottom) ======================
+# ====================== LARGE VERTICAL COLORED BUTTONS ======================
 cols = st.columns(7)
 for i, row in enumerate(ticker_data_list):
     tick = row["Ticker"]
@@ -315,6 +315,7 @@ for i, row in enumerate(ticker_data_list):
     strength = row["Strength"]
     key = f"btn_{label.lower().replace(' ', '_')}_{tick}"
     
+    # Full background color
     if "STRONG BUY" in label:
         bg = "#0f5132"   # Dark green
     elif "BUY" in label:
@@ -329,10 +330,12 @@ for i, row in enumerate(ticker_data_list):
         button[key="{key}"] {{
             background-color: {bg} !important;
             color: white !important;
-            height: 138px !important;
+            height: 142px !important;
             font-size: 1.48rem !important;
-            line-height: 1.25 !important;
-            padding: 8px 12px !important;
+            line-height: 1.3 !important;
+            padding: 10px 12px !important;
+            border-radius: 18px !important;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.4) !important;
         }}
     </style>
     """, unsafe_allow_html=True)
