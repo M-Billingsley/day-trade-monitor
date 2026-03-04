@@ -386,19 +386,20 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
 
     st.success(f"🚀 **{data['label']} – {tick}**")
 
-    st.subheader("🔍 9 Trade Gates – Pass/Fail")
-    dcols = st.columns(3)
-    with dcols[0]:
-        st.metric("Bullish Trend", "✅ PASS" if data["bull"] else "❌ FAIL")
-        st.metric("Volume OK", "✅ PASS" if data["vol_ok"] else "❌ FAIL")
-    with dcols[1]:
-        st.metric("RSI OK", "✅ PASS" if data["rsi"] < (78 if not is_strict else 75) else "❌ FAIL")
-        st.metric("Pullback < +4.5%", "✅ PASS" if data["chg_from_open"] < (4.5 if not is_strict else 3) else "❌ FAIL")
-    with dcols[2]:
-        st.metric("Time Window", "✅ PASS" if data["time_ok"] else "❌ FAIL", delta="OVERRIDDEN" if override else None)
-        st.metric("MACD + Histogram", "✅ PASS" if data["histogram_ok"] else "❌ FAIL")
-        st.metric("QQQ Rel Strength", "✅ PASS" if data["rel_strength_ok"] else "❌ FAIL")
-
+   st.subheader("🔍 9 Trade Gates – Pass/Fail")
+dcols = st.columns(3)
+with dcols[0]:
+    st.metric("Bullish Trend", "✅ PASS" if data["bull"] else "❌ FAIL")
+    st.metric("Volume OK", "✅ PASS" if data["vol_ok"] else "❌ FAIL")
+    st.metric("Near 9-EMA", "✅ PASS" if data["near_9ema"] else "❌ FAIL")   # ← added
+with dcols[1]:
+    st.metric("RSI OK", "✅ PASS" if data["rsi"] < (78 if not is_strict else 75) else "❌ FAIL")
+    st.metric("Pullback < +4.5%", "✅ PASS" if data["chg_from_open"] < (4.5 if not is_strict else 3) else "❌ FAIL")
+    st.metric("MACD Line Bullish", "✅ PASS" if data["macd_bullish"] else "❌ FAIL")  # ← added
+with dcols[2]:
+    st.metric("Time Window", "✅ PASS" if data["time_ok"] else "❌ FAIL", delta="OVERRIDDEN" if override else None)
+    st.metric("MACD Histogram OK", "✅ PASS" if data["histogram_ok"] else "❌ FAIL")
+    st.metric("QQQ Rel Strength", "✅ PASS" if data["rel_strength_ok"] else "❌ FAIL")
     if "BUY" in data["label"] or (override and data["label"] != "SHORT"):
         st.subheader(f"📊 {tick} – 5-Day Price Action")
         try:
