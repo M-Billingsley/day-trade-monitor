@@ -19,7 +19,7 @@ st.set_page_config(
     page_title="Day Trade Monitor",
     page_icon="📈",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="collapsed"  # No sidebar wanted
 )
 
 # ====================== GLOBAL STYLING ======================
@@ -220,14 +220,11 @@ with st.expander("🆕 New to Telegram? Full Setup Guide (3 minutes)", expanded=
     st.success("✅ Setup complete — you’re ready for alerts!")
 
 # ====================== INPUT CONTROLS ======================
-input_cols = st.columns([3.5, 1.3, 1.3])  # Wider first column for visible + / - buttons
-
+input_cols = st.columns([4.5, 1.3, 1.3])
 with input_cols[0]:
     account_size = st.number_input("Trading Account Size $", value=30000, step=1000)
-
 with input_cols[1]:
     risk_pct = st.selectbox("Risk per Trade", ["0.5%", "1.0%", "1.5%", "2.0%", "3.0%"], index=1)
-
 with input_cols[2]:
     strategy_mode = st.selectbox("Strategy Mode", ["Balanced (more opportunities)", "Strict (higher win rate)"], index=0)
 
@@ -328,7 +325,7 @@ for tick in TICKERS:
         pass
 
 # ====================== SIGNAL OVERVIEW TABLE ======================
-st.subheader("📋 Signal Overview Table (click row to open plan")
+st.subheader("📋 Signal Overview Table (click row to open plan)")
 if ticker_data_list:
     table_data = []
     for row in ticker_data_list:
@@ -692,7 +689,7 @@ if auto_morning and dt_time(8, 0) <= now_et.time() <= dt_time(9, 0):
             except Exception as e:
                 st.error(f"Auto morning send failed: {str(e)[:80]}")
 
-# ====================== MANUAL MORNING SUMMARY BUTTON (with image) ======================
+# ====================== MANUAL MORNING SUMMARY BUTTON ======================
 if st.button("📨 Send Morning Summary to Telegram (Manual with Image)", type="primary", width="stretch"):
     if "telegram_token" in st.session_state and "telegram_chat_id" in st.session_state:
         try:
