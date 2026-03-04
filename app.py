@@ -13,42 +13,22 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 # ====================== PAGE CONFIG ======================
-st.set_page_config(
-    page_title="Day Trade Monitor",
-    page_icon="📈",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+st.set_page_config(page_title="Day Trade Monitor", page_icon="📈", layout="wide", initial_sidebar_state="expanded")
 
 # ====================== GLOBAL STYLING ======================
 st.markdown("""
 <style>
-    header, footer, [data-testid="stToolbar"], [data-testid="stHeader"], .stAppDeployButton {
-        display: none !important;
-    }
-    button {
-        width: 100% !important;
-        height: 118px !important;
-        font-size: 1.45rem !important;
-        font-weight: 700 !important;
-        border-radius: 16px !important;
-        border: none !important;
-        box-shadow: 0 6px 18px rgba(0,0,0,0.35) !important;
-        margin-bottom: 10px !important;
-    }
-    button:hover {
-        transform: scale(1.03) !important;
-    }
+    header, footer, [data-testid="stToolbar"], [data-testid="stHeader"], .stAppDeployButton {display: none !important;}
+    button {width: 100% !important; height: 118px !important; font-size: 1.45rem !important; font-weight: 700 !important; border-radius: 16px !important; border: none !important; box-shadow: 0 6px 18px rgba(0,0,0,0.35) !important; margin-bottom: 10px !important;}
+    button:hover {transform: scale(1.03) !important;}
 </style>
 """, unsafe_allow_html=True)
 
 # ====================== CACHING ======================
 @st.cache_data(ttl=5, show_spinner=False)
 def get_history(ticker: str, period: str = "2d", interval: str = "1d"):
-    try:
-        return yf.Ticker(ticker).history(period=period, interval=interval)
-    except:
-        return pd.DataFrame()
+    try: return yf.Ticker(ticker).history(period=period, interval=interval)
+    except: return pd.DataFrame()
 
 @st.cache_data(ttl=1800, show_spinner=False)
 def run_intraday_backtest(tick: str, is_strict: bool):
@@ -57,8 +37,7 @@ def run_intraday_backtest(tick: str, is_strict: bool):
         qqq_hist = yf.Ticker("QQQ").history(period="60d", interval="15m")
         hist.index = hist.index.tz_convert("America/New_York")
         qqq_hist.index = qqq_hist.index.tz_convert("America/New_York")
-        if len(hist) < 200:
-            return None
+        if len(hist) < 200: return None
         signals = wins = total_pl = 0
         pl_list = []
         max_win_streak = max_loss_streak = current_streak = 0
@@ -79,18 +58,9 @@ def run_intraday_backtest(tick: str, is_strict: bool):
                     exited = False
                     for k in range(len(future)):
                         exit_p = future['Close'].iloc[k]
-                        if exit_p >= entry * 1.03:
-                            pl = 3.0
-                            exited = True
-                            break
-                        if exit_p <= entry * 0.98:
-                            pl = -2.0
-                            exited = True
-                            break
-                        if future.index[k].hour >= 12:
-                            pl = (exit_p - entry) / entry * 100
-                            exited = True
-                            break
+                        if exit_p >= entry * 1.03: pl = 3.0; exited = True; break
+                        if exit_p <= entry * 0.98: pl = -2.0; exited = True; break
+                        if future.index[k].hour >= 12: pl = (exit_p - entry) / entry * 100; exited = True; break
                     if exited:
                         total_pl += pl
                         pl_list.append(pl)
@@ -106,25 +76,21 @@ def run_intraday_backtest(tick: str, is_strict: bool):
         if signals > 0:
             win_rate = wins / signals * 100
             return {
-                "signals": signals,
-                "win_rate": round(win_rate, 1),
+                "signals": signals, "win_rate": round(win_rate, 1),
                 "avg_pl": round(total_pl / signals, 2),
                 "avg_win": round(np.mean([p for p in pl_list if p > 0]) if wins > 0 else 0, 2),
                 "avg_loss": round(np.mean([p for p in pl_list if p < 0]) if (signals - wins) > 0 else 0, 2),
                 "profit_factor": round(sum(p for p in pl_list if p > 0) / abs(sum(p for p in pl_list if p < 0)) if any(p < 0 for p in pl_list) else float('inf'), 2),
-                "max_win_streak": max_win_streak,
-                "max_loss_streak": max_loss_streak,
-                "total_pl": round(total_pl, 1)
+                "max_win_streak": max_win_streak, "max_loss_streak": max_loss_streak, "total_pl": round(total_pl, 1)
             }
         return None
-    except:
-        return None
+    except: return None
 
 # ====================== CONFIG ======================
 DEFAULT_ACCOUNT_SIZE = 175000.0
 CSV_FILE = "trade_log.csv"
-TICKERS = ["SOXL", "TQQQ", "TECL", "SPXL", "FNGU", "BULZ", "TSLL", "NVDL", "BITX",
-           "QLD", "UPRO", "SSO", "LABU", "WEBL"]
+JOURNAL_FILE = "daily_signals.csv"
+TICKERS = ["SOXL", "TQQQ", "TECL", "SPXL", "FNGU", "BULZ", "TSLL", "NVDL", "BITX", "QLD", "UPRO", "SSO", "LABU", "WEBL"]
 KEY_UNDERLYINGS = ["NVDA", "TSLA", "AMD", "AVGO", "AAPL", "MSFT", "META", "AMZN"]
 
 if os.path.exists(CSV_FILE):
@@ -133,11 +99,12 @@ else:
     trades_df = pd.DataFrame(columns=["Date", "Ticker", "Entry Price", "Exit Price", "Shares", "P/L $", "Notes"])
     trades_df.to_csv(CSV_FILE, index=False)
 
+if not os.path.exists(JOURNAL_FILE):
+    pd.DataFrame(columns=["Date", "Signal", "Ticker", "Strength", "Price", "Chg%"]).to_csv(JOURNAL_FILE, index=False)
+
 # ====================== SECRETS ======================
-try:
-    secrets = st.secrets
-except:
-    secrets = {}
+try: secrets = st.secrets
+except: secrets = {}
 for prefix, section in [("twilio_", "twilio"), ("telegram_", "telegram")]:
     for key in secrets.get(section, {}):
         sess_key = f"{prefix}{key}"
@@ -159,8 +126,7 @@ with st.sidebar:
                 price = data['Close'].iloc[-1]
                 chg = (price - data['Close'].iloc[-2]) / data['Close'].iloc[-2] * 100
                 st.metric(name, f"{price:,.0f}", f"{chg:+.2f}%")
-        except:
-            st.metric(name, "—")
+        except: st.metric(name, "—")
     st.divider()
     st.subheader("Your Tickers")
     for tick in TICKERS:
@@ -170,16 +136,14 @@ with st.sidebar:
                 price = data['Close'].iloc[-1]
                 chg = (price - data['Close'].iloc[-2]) / data['Close'].iloc[-2] * 100
                 st.metric(tick, f"${price:,.2f}", f"{chg:+.1f}%")
-        except:
-            st.metric(tick, "—")
+        except: st.metric(tick, "—")
     st.divider()
     st.subheader("Key Underlyings")
     for u in KEY_UNDERLYINGS:
         try:
             price = get_history(u, "1d")['Close'].iloc[-1]
             st.metric(u, f"${price:,.2f}")
-        except:
-            st.metric(u, "—")
+        except: st.metric(u, "—")
     st.divider()
     now_et = datetime.now(ZoneInfo("America/New_York"))
     st.caption(f"🔄 Last refreshed: {now_et.strftime('%H:%M:%S ET')}")
@@ -199,10 +163,9 @@ with st.sidebar:
             bot = TeleBot(st.session_state.telegram_token)
             bot.send_message(st.session_state.telegram_chat_id, "✅ TEST SUCCESSFUL! Day Trade Monitor is ready 🚀")
             st.success("✅ Test sent!")
-        except Exception as e:
-            st.error(f"Test failed: {str(e)[:80]}")
+        except Exception as e: st.error(f"Test failed: {str(e)[:80]}")
 
-# ====================== TITLE + REGIME + HEAT-MAP + ACCOUNT ======================
+# ====================== TITLE + REGIME + MARKET STATUS ======================
 st.title("Day Trade Monitor")
 st.caption("High Risk / High Reward – Rules only, no emotion")
 
@@ -212,12 +175,9 @@ st.markdown(f"<h4 style='text-align:center; background:#1e3a8a; color:white; pad
 
 qqq_today = get_history("QQQ", "2d")
 qqq_chg = (qqq_today['Close'].iloc[-1] - qqq_today['Close'].iloc[-2]) / qqq_today['Close'].iloc[-2] * 100 if len(qqq_today) > 1 else 0
-if qqq_chg > 0.8:
-    regime = "🟢 Bullish Day – Trade Aggressively"
-elif qqq_chg > -0.8:
-    regime = "🟡 Neutral Day – Stick to Strong Buys"
-else:
-    regime = "🔴 Choppy/Bearish Day – Caution Advised"
+if qqq_chg > 0.8: regime = "🟢 Bullish Day – Trade Aggressively"
+elif qqq_chg > -0.8: regime = "🟡 Neutral Day – Stick to Strong Buys"
+else: regime = "🔴 Choppy/Bearish Day – Caution Advised"
 st.markdown(f"<h3 style='text-align:center; background:#1e3a8a; color:white; padding:14px; border-radius:12px; margin-bottom:12px;'>{regime} (QQQ {qqq_chg:+.1f}%)</h3>", unsafe_allow_html=True)
 
 # Family Telegram Guide
@@ -245,6 +205,7 @@ with st.expander("🆕 New to Telegram? Full Setup Guide (3 minutes)", expanded=
     """)
     st.success("✅ Setup complete — you’re ready for alerts!")
 
+# Heat-Map
 st.subheader("📈 Live Heat-Map – All 14 Tickers")
 heat_cols = st.columns(7)
 for i, tick in enumerate(TICKERS):
@@ -268,17 +229,14 @@ for i, tick in enumerate(TICKERS):
             """, unsafe_allow_html=True)
 
 col1, col2 = st.columns([3, 1])
-with col1:
-    account_size = st.number_input("Trading Account Size $", value=DEFAULT_ACCOUNT_SIZE, step=10000.0)
-with col2:
-    risk_pct = st.selectbox("Risk per Trade", ["0.5%", "1.0%", "1.5%", "2.0%", "3.0%"], index=1)
+with col1: account_size = st.number_input("Trading Account Size $", value=DEFAULT_ACCOUNT_SIZE, step=10000.0)
+with col2: risk_pct = st.selectbox("Risk per Trade", ["0.5%", "1.0%", "1.5%", "2.0%", "3.0%"], index=1)
 base_risk_dollars = account_size * float(risk_pct.strip("%")) / 100
 st.caption(f"**Base Max Loss (fixed risk):** ${base_risk_dollars:,.0f} ({risk_pct})")
 
 refresh_col, auto_col = st.columns([1, 3])
 with refresh_col:
-    if st.button("🔄 Refresh All Data", type="primary", width="stretch"):
-        st.rerun()
+    if st.button("🔄 Refresh All Data", type="primary", width="stretch"): st.rerun()
 with auto_col:
     auto_refresh = st.checkbox("Auto-refresh market data every 10 seconds", value=True, key="auto_refresh_checkbox")
 
@@ -327,20 +285,12 @@ for tick in TICKERS:
         rel_strength_ok = chg_from_open > qqq_chg_from_open - 0.5
         conditions_met = sum([bull, vol_ok, rsi_ok, chg_from_open < (4.5 if not is_strict else 3),
                               near_9ema, time_ok, macd_bullish, histogram_ok, rel_strength_ok])
-        if conditions_met >= 9:
-            label = "STRONG BUY"
-        elif conditions_met >= 7 and time_ok:
-            label = "BUY"
-        elif chg_from_open > 6 or rsi > 82:
-            label = "SIT"
-        else:
-            label = "SHORT"
+        if conditions_met >= 9: label = "STRONG BUY"
+        elif conditions_met >= 7 and time_ok: label = "BUY"
+        elif chg_from_open > 6 or rsi > 82: label = "SIT"
+        else: label = "SHORT"
         ticker_data_list.append({
-            "Ticker": tick,
-            "Price": round(curr, 2),
-            "Chg %": round(chg_from_open, 1),
-            "Strength": conditions_met,
-            "Signal": label,
+            "Ticker": tick, "Price": round(curr, 2), "Chg %": round(chg_from_open, 1), "Strength": conditions_met, "Signal": label,
             "Data": {
                 "curr": curr, "prev": prev_close, "chg_from_open": chg_from_open,
                 "rsi": rsi, "bull": bull, "vol_ok": vol_ok, "near_9ema": near_9ema,
@@ -351,8 +301,34 @@ for tick in TICKERS:
                 "dist_9ema_pct": abs(curr - ema9) / ema9 * 100 if ema9 != 0 else 0
             }
         })
-    except:
-        pass
+    except: pass
+
+# ====================== NEW: SIGNAL OVERVIEW TABLE ======================
+st.subheader("📋 Signal Overview Table (click row to open plan)")
+if ticker_data_list:
+    table_data = []
+    for row in ticker_data_list:
+        color = "🟢" if "STRONG BUY" in row["Signal"] else "🟡" if "BUY" in row["Signal"] else "🟠" if row["Signal"] == "SIT" else "🔴"
+        table_data.append({
+            "Signal": f"{color} {row['Signal']}",
+            "Ticker": row["Ticker"],
+            "Strength": row["Strength"],
+            "Price": row["Price"],
+            "Chg %": row["Chg %"],
+            "RSI": round(row["Data"]["rsi"], 1),
+            "Vol ×": round(row["Data"]["vol_ratio"], 1),
+            "To 9EMA %": round(row["Data"]["dist_9ema_pct"], 2),
+            "MACD Hist": round(row["Data"]["macd_hist"], 4)
+        })
+    df_table = pd.DataFrame(table_data)
+    st.dataframe(df_table, width="stretch", hide_index=True, use_container_width=True)
+    if st.button("Open full plan for selected ticker"):
+        selected = st.selectbox("Choose ticker", df_table["Ticker"])
+        for row in ticker_data_list:
+            if row["Ticker"] == selected:
+                st.session_state.selected_ticker = selected
+                st.session_state.ticker_data = row["Data"]
+                st.rerun()
 
 # ====================== VERTICAL BUTTONS ======================
 cols = st.columns(7)
@@ -399,6 +375,7 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
     override = st.checkbox("**Override fail Windows** (show BUY plan anyway)", value=False, key="time_override")
     st.success(f"🚀 **{data.get('label', 'UNKNOWN')} – {tick}**")
 
+    # 9 Gates
     st.subheader("🔍 9 Trade Gates – Pass/Fail")
     dcols = st.columns(3)
     with dcols[0]:
@@ -414,6 +391,7 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
         st.metric("8. MACD Histogram", "✅ PASS" if data.get("histogram_ok") else "❌ FAIL")
         st.metric("9. QQQ Rel Strength", "✅ PASS" if data.get("rel_strength_ok") else "❌ FAIL")
 
+    # Live Indicator Readings
     st.subheader("📊 Live Indicator Readings")
     c1, c2, c3 = st.columns(3)
     with c1:
@@ -429,6 +407,17 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
         st.metric("MACD Histogram", f"{data.get('macd_hist', 0):+.4f}")
         st.metric("9-EMA Value", f"${data.get('ema9', 0):,.2f}")
 
+    # NEW: Advanced Position Sizer
+    st.subheader("📏 Advanced Position Sizer")
+    stop_dist_pct = st.number_input("Stop Distance from Entry (%)", value=2.0, step=0.1, key="stop_dist")
+    if "BUY" in data.get("label", "") or (override and data.get("label", "") != "SHORT"):
+        suggested_buy = data.get("curr", 0) * 0.98
+        risk_per_share = suggested_buy * (stop_dist_pct / 100)
+        shares = int((account_size * 0.02) / risk_per_share) if risk_per_share > 0 else 25
+        shares = max(25, round(shares / 25) * 25)
+        st.success(f"**Recommended Shares:** {shares:,} (Risk: ${round(shares * risk_per_share, 0):,})")
+
+    # Execution Instructions
     if "BUY" in data.get("label", "") or (override and data.get("label", "") != "SHORT"):
         if "STRONG BUY" in data.get("label", ""):
             dynamic_risk_pct = 2.0
@@ -465,22 +454,24 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
             st.write(f"• Once +3% target is hit, move stop to **${breakeven_trail:,.2f}**")
             st.info(f"**Dynamic Risk Sizing Justification**\n\n{justification}")
 
-        st.subheader(f"📊 {tick} – 5-Day Price Action")
+        # NEW: Enhanced Interactive Chart
+        st.subheader(f"📊 {tick} – 5-Day Price Action with EMA9 + MACD")
         try:
             chart_hist = yf.Ticker(tick).history(period="5d")
             if not chart_hist.empty:
-                chart_hist['Range %'] = ((chart_hist['High'] - chart_hist['Low']) / chart_hist['Low'] * 100).round(1)
-                fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.75, 0.25], subplot_titles=(f"{tick} Price", "Volume"))
-                fig.add_trace(go.Candlestick(x=chart_hist.index, open=chart_hist['Open'], high=chart_hist['High'], low=chart_hist['Low'], close=chart_hist['Close'], name="Price", customdata=chart_hist['Range %']), row=1, col=1)
+                ema9 = chart_hist['Close'].ewm(span=9, adjust=False).mean()
+                fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.75, 0.25], subplot_titles=(f"{tick} Price + EMA9", "MACD"))
+                fig.add_trace(go.Candlestick(x=chart_hist.index, open=chart_hist['Open'], high=chart_hist['High'], low=chart_hist['Low'], close=chart_hist['Close'], name="Price"), row=1, col=1)
+                fig.add_trace(go.Scatter(x=chart_hist.index, y=ema9, line=dict(color='orange', width=2), name="EMA9"), row=1, col=1)
                 fig.add_trace(go.Bar(x=chart_hist.index, y=chart_hist['Volume'], name="Volume", marker_color="rgba(100,149,237,0.7)"), row=2, col=1)
-                fig.update_layout(height=440, hovermode="x unified", xaxis_rangeslider_visible=False, template="plotly_dark")
                 st.plotly_chart(fig, width="stretch")
         except:
-            st.caption("Plotly chart unavailable")
+            st.caption("Chart unavailable")
 
     else:
         st.warning(f"**{data.get('label', 'UNKNOWN')} SIGNAL – {tick}**")
 
+    # Backtest + Win Probability
     st.subheader("📊 Realistic Intraday Backtest – Last 60 Trading Days")
     backtest_key = f"backtest_{tick}"
     if st.button("🚀 Run Realistic Intraday Backtest on " + tick, type="secondary", key=f"bt_{tick}", width="stretch"):
@@ -517,7 +508,7 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
     st.caption("**Real-world trading on this strategy should return better than this backtest.**")
 
 else:
-    st.info("👆 Click any colored card above to see full trade plan + backtest + win probability")
+    st.info("👆 Click any colored card or row above to see full trade plan + backtest + win probability")
 
 # ====================== PORTFOLIO HEAT ======================
 st.subheader("🔥 Portfolio Heat / Open Risk")
@@ -539,12 +530,8 @@ if os.path.exists(CSV_FILE):
                 unreal_pnl = shares * (curr_price - entry)
                 exposure = shares * curr_price
                 heat_rows.append({
-                    "Ticker": tick,
-                    "Shares": int(shares),
-                    "Entry": f"${entry:,.2f}",
-                    "Current": f"${curr_price:,.2f}",
-                    "Unreal P/L $": f"${unreal_pnl:,.0f}",
-                    "Unreal P/L %": f"{(curr_price - entry)/entry*100:+.1f}%",
+                    "Ticker": tick, "Shares": int(shares), "Entry": f"${entry:,.2f}", "Current": f"${curr_price:,.2f}",
+                    "Unreal P/L $": f"${unreal_pnl:,.0f}", "Unreal P/L %": f"{(curr_price - entry)/entry*100:+.1f}%",
                     "Exposure %": f"{exposure / account_size * 100:.1f}%"
                 })
             except:
@@ -664,4 +651,4 @@ if auto_refresh:
             st.session_state.last_refresh = time.time()
             st.rerun()
 
-st.caption("✅ Fully fixed – No more warnings!")
+st.caption("✅ **ALL 5 FEATURES ADDED** – Signal Table, Position Sizer, Enhanced Chart, Daily Journal & improved alerts are live!")
