@@ -272,7 +272,7 @@ for i, tick in enumerate(TICKERS):
 
 col1, col2 = st.columns([2, 1])
 with col1:
-    account_size = st.number_input("Trading Account Size $", value=30000.0, step=1000.0, format="%d")
+    account_size = st.number_input("Trading Account Size $", value=30000, step=1000, format="%d")
 with col2:
     risk_pct = st.selectbox("Risk per Trade", ["0.5%", "1.0%", "1.5%", "2.0%", "3.0%"], index=1)
 base_risk_dollars = account_size * float(risk_pct.strip("%")) / 100
