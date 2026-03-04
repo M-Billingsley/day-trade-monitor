@@ -248,27 +248,7 @@ with st.expander("🆕 New to Telegram? Full Setup Guide (3 minutes)", expanded=
     """)
     st.success("✅ Setup complete — you’re ready for alerts!")
 
-st.subheader("📈 Live Heat-Map – All 14 Tickers")
-heat_cols = st.columns(7)
-for i, tick in enumerate(TICKERS):
-    try:
-        data = get_history(tick, "2d")
-        price = data['Close'].iloc[-1]
-        chg = (price - data['Close'].iloc[-2]) / data['Close'].iloc[-2] * 100
-        color = "#15803d" if chg > 0 else "#b91c1c"
-        with heat_cols[i % 7]:
-            st.markdown(f"""
-            <div style="background:{color}; color:white; padding:10px; border-radius:10px; text-align:center; margin-bottom:8px;">
-                <b>{tick}</b><br>${price:,.2f}<br><span style="font-size:1.1em;">{chg:+.1f}%</span>
-            </div>
-            """, unsafe_allow_html=True)
-    except:
-        with heat_cols[i % 7]:
-            st.markdown(f"""
-            <div style="background:#374151; color:white; padding:10px; border-radius:10px; text-align:center; margin-bottom:8px;">
-                <b>{tick}</b><br>—<br>—
-            </div>
-            """, unsafe_allow_html=True)
+
 
 col1, col2 = st.columns([2, 1])
 with col1:
@@ -284,6 +264,12 @@ with refresh_col:
         st.rerun()
 with auto_col:
     auto_refresh = st.checkbox("Auto-refresh Heat-Map & Signals every 60 seconds (1 minute)", value=True, key="auto_refresh_checkbox")
+    
+# Calculate QQQ change for Trade Plan (needed outside the fragment)
+qqq_hist = get_history("QQQ", "5d")
+qqq_open = qqq_hist['Open'].iloc[-1] if not qqq_hist.empty else 0
+qqq_curr = qqq_hist['Close'].iloc[-1] if not qqq_hist.empty else 0
+qqq_chg_from_open = (qqq_curr - qqq_open) / qqq_open * 100 if qqq_open != 0 else 0
 
 # ====================== LIVE REFRESH SECTION (Heat-Map + Signals only) ======================
 @st.fragment(run_every=60)
@@ -711,6 +697,3 @@ if st.button("📨 Send Morning Summary to Telegram", type="primary", width="str
             st.success("✅ Morning summary sent!")
         except Exception as e:
             st.error(f"Failed: {str(e)[:80]}")
-
-# ====================== AUTO-REFRESH (only Heat-Map + Signals) ======================
-auto_refresh = st.checkbox("Auto-refresh Heat-Map & Signals every 60 seconds (1 minute)", value=True, key="auto_refresh_checkbox")
