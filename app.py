@@ -410,7 +410,7 @@ def live_section():
     # ←←← ADD THIS LINE HERE (saves data for alerts & sidebar)
     st.session_state.ticker_data_list = ticker_data_list
 
-live_section()  # ← this runs the live fragment every 60 seconds
+# live_section()  # ← TEMPORARILY COMMENTED OUT TO BRING SIDEBAR BACK
 
 # ====================== AUTO ALERTS ======================
 ticker_data_list = st.session_state.get("ticker_data_list", [])
