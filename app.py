@@ -54,7 +54,6 @@ def get_history(ticker: str, period: str = "2d", interval: str = "1d"):
 
 @st.cache_data(ttl=1800, show_spinner=False)
 def run_intraday_backtest(tick: str, is_strict: bool):
-    # (your existing backtest function - unchanged)
     try:
         hist = yf.Ticker(tick).history(period="60d", interval="15m")
         qqq_hist = yf.Ticker("QQQ").history(period="60d", interval="15m")
@@ -196,7 +195,7 @@ with idx_cols[2]:
     except:
         st.metric("S&P 500", "—")
 
-# Family Telegram Guide (unchanged)
+# Family Telegram Guide
 st.markdown("### 👨‍👩‍👧‍👦 Welcome to Day Trade Monitor – Family Edition")
 with st.expander("🆕 New to Telegram? Full Setup Guide (3 minutes)", expanded=False):
     st.markdown("""
@@ -221,15 +220,19 @@ with st.expander("🆕 New to Telegram? Full Setup Guide (3 minutes)", expanded=
     st.success("✅ Setup complete — you’re ready for alerts!")
 
 # ====================== INPUT CONTROLS ======================
-input_cols = st.columns([4.5, 1.3, 1.3])
+input_cols = st.columns([3.5, 1.3, 1.3])  # Wider first column for visible + / - buttons
+
 with input_cols[0]:
     account_size = st.number_input("Trading Account Size $", value=30000, step=1000)
+
 with input_cols[1]:
     risk_pct = st.selectbox("Risk per Trade", ["0.5%", "1.0%", "1.5%", "2.0%", "3.0%"], index=1)
+
 with input_cols[2]:
     strategy_mode = st.selectbox("Strategy Mode", ["Balanced (more opportunities)", "Strict (higher win rate)"], index=0)
 
 is_strict = strategy_mode.startswith("Strict")
+
 base_risk_dollars = account_size * float(risk_pct.strip("%")) / 100
 st.caption(f"**Base Max Loss (fixed risk):** ${base_risk_dollars:,.0f} ({risk_pct})")
 
@@ -246,7 +249,7 @@ qqq_chg_from_open = 0.0
 if 'ticker_data_list' not in st.session_state:
     st.session_state.ticker_data_list = []
 
-# Calculate QQQ change
+# Calculate QQQ change for Trade Plan
 qqq_hist = get_history("QQQ", "5d")
 qqq_open = qqq_hist['Open'].iloc[-1] if not qqq_hist.empty else 0
 qqq_curr = qqq_hist['Close'].iloc[-1] if not qqq_hist.empty else 0
@@ -264,7 +267,6 @@ for tick in TICKERS:
     try:
         hist = get_history(tick, "5d")
         if hist.empty: continue
-        # (your full signal calculation code remains unchanged - same as your last stable version)
         prev_close = hist['Close'].iloc[-2] if len(hist) > 1 else hist['Close'].iloc[-1]
         curr = hist['Close'].iloc[-1]
         today_open = hist['Open'].iloc[-1]
@@ -325,31 +327,8 @@ for tick in TICKERS:
     except:
         pass
 
-# ====================== LIVE HEAT-MAP ======================
-st.subheader("📈 Live Heat-Map – All 14 Tickers")
-heat_cols = st.columns(7)
-for i, tick in enumerate(TICKERS):
-    try:
-        data = get_history(tick, "2d")
-        price = data['Close'].iloc[-1]
-        chg = (price - data['Close'].iloc[-2]) / data['Close'].iloc[-2] * 100
-        color = "#15803d" if chg > 0 else "#b91c1c"
-        with heat_cols[i % 7]:
-            st.markdown(f"""
-            <div style="background:{color}; color:white; padding:10px; border-radius:10px; text-align:center; margin-bottom:8px;">
-                <b>{tick}</b><br>${price:,.2f}<br><span style="font-size:1.1em;">{chg:+.1f}%</span>
-            </div>
-            """, unsafe_allow_html=True)
-    except:
-        with heat_cols[i % 7]:
-            st.markdown(f"""
-            <div style="background:#374151; color:white; padding:10px; border-radius:10px; text-align:center; margin-bottom:8px;">
-                <b>{tick}</b><br>—<br>—
-            </div>
-            """, unsafe_allow_html=True)
-
 # ====================== SIGNAL OVERVIEW TABLE ======================
-st.subheader("📋 Signal Overview Table (click row to open plan)")
+st.subheader("📋 Signal Overview Table (click row to open plan")
 if ticker_data_list:
     table_data = []
     for row in ticker_data_list:
@@ -657,7 +636,24 @@ with st.expander("📒 Trade Log"):
             )
     st.dataframe(trades_df.tail(10), width="stretch")
 
-# ====================== TELEGRAM ALERTS + DAILY AUTO MORNING (with opt-out) ======================
+# ====================== MORNING SUMMARY ======================
+st.markdown("---")
+if st.button("📨 Send Morning Summary to Telegram", type="primary", width="stretch"):
+    if "telegram_token" in st.session_state and "telegram_chat_id" in st.session_state:
+        try:
+            bot = TeleBot(st.session_state.telegram_token)
+            summary = f"📈 Day Trade Monitor Morning Summary\n\nMarket Regime: {regime}\n\nSTRONG BUY Signals:\n"
+            strong = [row for row in st.session_state.get("ticker_data_list", []) if row["Signal"] == "STRONG BUY"]
+            for row in strong:
+                summary += f"• {row['Ticker']} @ ${row['Price']} (+{row['Chg %']}%) — {row['Strength']}/9\n"
+            if not strong:
+                summary += "None right now\n"
+            bot.send_message(st.session_state.telegram_chat_id, summary)
+            st.success("✅ Morning summary sent!")
+        except Exception as e:
+            st.error(f"Failed: {str(e)[:80]}")
+
+# ====================== TELEGRAM ALERTS (at very bottom) ======================
 st.subheader("📲 Telegram Alerts")
 tg_token = st.text_input("Telegram Bot Token", type="password", value=st.session_state.get("telegram_token", ""))
 tg_chat = st.text_input("Chat ID", value=st.session_state.get("telegram_chat_id", ""))
@@ -674,7 +670,7 @@ if st.button("🔵 Send Test Telegram Now"):
     except Exception as e:
         st.error(f"Test failed: {str(e)[:80]}")
 
-# Daily auto morning summary with image (opt-out)
+# ====================== DAILY AUTO MORNING TELEGRAM + IMAGE (with opt-out) ======================
 auto_morning = st.checkbox("✅ Receive daily morning summary automatically (8-9 AM ET with Heat-Map image)", value=True, key="auto_morning")
 
 now_et = datetime.now(ZoneInfo("America/New_York"))
@@ -713,35 +709,19 @@ if auto_morning and dt_time(8, 0) <= now_et.time() <= dt_time(9, 0):
             except Exception as e:
                 st.error(f"Auto morning send failed: {str(e)[:80]}")
 
-# ====================== MANUAL MORNING SUMMARY BUTTON (with image) ======================
+# ====================== MANUAL MORNING SUMMARY BUTTON (only one) ======================
 if st.button("📨 Send Morning Summary to Telegram (Manual with Image)", type="primary", width="stretch"):
     if "telegram_token" in st.session_state and "telegram_chat_id" in st.session_state:
         try:
             bot = TeleBot(st.session_state.telegram_token)
-            
             summary = f"📈 Day Trade Monitor Morning Summary\n\nMarket Regime: {regime}\n\nSTRONG BUY Signals:\n"
             strong = [row for row in st.session_state.get("ticker_data_list", []) if row["Signal"] == "STRONG BUY"]
             for row in strong:
                 summary += f"• {row['Ticker']} @ ${row['Price']} (+{row['Chg %']}%) — {row['Strength']}/9\n"
             if not strong:
                 summary += "None right now\n"
-            
-            # Create Heat-Map + Table image
-            fig = go.Figure()
-            fig.add_trace(go.Table(
-                header=dict(values=list(df_table.columns), fill_color="lightblue", align="center"),
-                cells=dict(values=[df_table[col] for col in df_table.columns], align="center")
-            ))
-            fig.update_layout(title="Heat-Map & Signals Snapshot", height=600)
-            
-            img_bytes = BytesIO()
-            pio.write_image(fig, img_bytes, format="png")
-            img_bytes.seek(0)
-            
             bot.send_message(st.session_state.telegram_chat_id, summary)
-            bot.send_photo(st.session_state.telegram_chat_id, photo=img_bytes, caption="📸 Heat-Map + Signals Snapshot")
-            
-            st.success("✅ Manual summary + image sent!")
+            st.success("✅ Manual summary sent!")
         except Exception as e:
             st.error(f"Failed: {str(e)[:80]}")
 
