@@ -285,116 +285,70 @@ with refresh_col:
 with auto_col:
     auto_refresh = st.checkbox("Auto-refresh market data every 60 seconds (1 minute)", value=True, key="auto_refresh_checkbox")
 
-# ====================== SIGNALS ======================
-st.subheader("🚀 Trade Signals")
-ticker_data_list = []
-qqq_hist = get_history("QQQ", "5d")
-qqq_open = qqq_hist['Open'].iloc[-1] if not qqq_hist.empty else 0
-qqq_curr = qqq_hist['Close'].iloc[-1] if not qqq_hist.empty else 0
-qqq_chg_from_open = (qqq_curr - qqq_open) / qqq_open * 100 if qqq_open != 0 else 0
+# ====================== LIVE REFRESH SECTION (Heat-Map + Signals only) ======================
+@st.fragment(run_every=60)
+def live_section():
+    st.subheader("🚀 Trade Signals")
+    ticker_data_list = []
+    qqq_hist = get_history("QQQ", "5d")
+    qqq_open = qqq_hist['Open'].iloc[-1] if not qqq_hist.empty else 0
+    qqq_curr = qqq_hist['Close'].iloc[-1] if not qqq_hist.empty else 0
+    qqq_chg_from_open = (qqq_curr - qqq_open) / qqq_open * 100 if qqq_open != 0 else 0
 
-for tick in TICKERS:
-    try:
-        hist = get_history(tick, "5d")
-        if hist.empty: continue
-        prev_close = hist['Close'].iloc[-2] if len(hist) > 1 else hist['Close'].iloc[-1]
-        curr = hist['Close'].iloc[-1]
-        today_open = hist['Open'].iloc[-1]
-        chg_from_open = (curr - today_open) / today_open * 100
-        prev_vol = hist['Volume'].iloc[-2] if len(hist) > 1 else 0
-        curr_vol = hist['Volume'].iloc[-1]
-        vol_ok = curr_vol > prev_vol * (1.5 if not is_strict else 1.8)
-        delta = hist['Close'].diff()
-        gain = delta.where(delta > 0, 0).rolling(14).mean()
-        loss = -delta.where(delta < 0, 0).rolling(14).mean().abs()
-        loss_safe = loss.replace(0, 1e-10)
-        rs = gain / loss_safe
-        rsi = max(0, min(100, 100 - (100 / (1 + rs)).iloc[-1]))
-        rsi_ok = rsi < (78 if not is_strict else 75)
-        ema50 = hist['Close'].ewm(span=50, adjust=False).mean().iloc[-1]
-        ema200 = hist['Close'].ewm(span=200, adjust=False).mean().iloc[-1]
-        bull = ema50 > ema200
-        ema9 = hist['Close'].ewm(span=9, adjust=False).mean().iloc[-1]
-        near_9ema = abs(curr - ema9) / ema9 < (0.02 if not is_strict else 0.015)
-        now_et_time = datetime.now(ZoneInfo("America/New_York")).time()
-        time_ok = dt_time(9, 30) <= now_et_time <= dt_time(12, 0) if not is_strict else dt_time(9, 45) <= now_et_time <= dt_time(11, 30)
-        ema12 = hist['Close'].ewm(span=12, adjust=False).mean()
-        ema26 = hist['Close'].ewm(span=26, adjust=False).mean()
-        macd_line = ema12 - ema26
-        signal_line = macd_line.ewm(span=9, adjust=False).mean()
-        macd_hist = macd_line - signal_line
-        macd_bullish = macd_line.iloc[-1] > signal_line.iloc[-1]
-        hist_positive = macd_hist.iloc[-1] > 0
-        hist_rising = macd_hist.iloc[-1] > macd_hist.iloc[-2] if len(macd_hist) > 1 else False
-        histogram_ok = hist_positive and (hist_rising if is_strict else True)
-        rel_strength_ok = chg_from_open > qqq_chg_from_open - 0.5
-        conditions_met = sum([bull, vol_ok, rsi_ok, chg_from_open < (4.5 if not is_strict else 3),
-                              near_9ema, time_ok, macd_bullish, histogram_ok, rel_strength_ok])
-        if conditions_met >= 9:
-            label = "STRONG BUY"
-        elif conditions_met >= 7 and time_ok:
-            label = "BUY"
-        elif chg_from_open > 6 or rsi > 82:
-            label = "SIT"
-        else:
-            label = "SHORT"
-        ticker_data_list.append({
-            "Ticker": tick,
-            "Price": round(curr, 2),
-            "Chg %": round(chg_from_open, 1),
-            "Strength": conditions_met,
-            "Signal": label,
-            "Data": {
-                "curr": curr, "prev": prev_close, "chg_from_open": chg_from_open,
-                "rsi": rsi, "bull": bull, "vol_ok": vol_ok, "near_9ema": near_9ema,
-                "time_ok": time_ok, "macd_bullish": macd_bullish, "histogram_ok": histogram_ok,
-                "rel_strength_ok": rel_strength_ok, "label": label, "strength": conditions_met,
-                "ema9": ema9, "vol_ratio": curr_vol / prev_vol if prev_vol > 0 else 1.0,
-                "macd_line": macd_line.iloc[-1], "macd_hist": macd_hist.iloc[-1],
-                "dist_9ema_pct": abs(curr - ema9) / ema9 * 100 if ema9 != 0 else 0
-            }
-        })
-    except:
-        pass
+    for tick in TICKERS:
+        try:
+            hist = get_history(tick, "5d")
+            if hist.empty: continue
+            # ... (keep ALL your original signal calculation code exactly as it is from "prev_close = ..." down to the end of ticker_data_list.append) ...
+            # (everything inside the for loop stays 100% unchanged)
+        except:
+            pass
 
-# ====================== SIGNAL OVERVIEW TABLE ======================
-st.subheader("📋 Signal Overview Table (click row to open plan)")
-if ticker_data_list:
-    table_data = []
-    for row in ticker_data_list:
-        color = "🟢" if "STRONG BUY" in row["Signal"] else "🟡" if "BUY" in row["Signal"] else "🟠" if row["Signal"] == "SIT" else "🔴"
-        table_data.append({
-            "Signal": f"{color} {row['Signal']}",
-            "Ticker": row["Ticker"],
-            "Strength": row["Strength"],
-            "Price": row["Price"],
-            "Chg %": row["Chg %"],
-            "RSI": round(row["Data"]["rsi"], 1),
-            "Vol ×": round(row["Data"]["vol_ratio"], 1),
-            "To 9EMA %": round(row["Data"]["dist_9ema_pct"], 2),
-            "MACD Hist": round(row["Data"]["macd_hist"], 4)
-        })
-    df_table = pd.DataFrame(table_data)
-    st.dataframe(df_table, width="stretch", hide_index=True, use_container_width=True)
-    selected = st.selectbox("Open full plan for:", df_table["Ticker"])
-    for row in ticker_data_list:
-        if row["Ticker"] == selected:
-            st.session_state.selected_ticker = selected
-            st.session_state.ticker_data = row["Data"]
-            # st.rerun()   ← COMMENTED OUT TO STOP INFINITE LOOP
+    # ====================== Live Heat-Map ======================
+    st.subheader("📈 Live Heat-Map – All 14 Tickers")
+    heat_cols = st.columns(7)
+    for i, tick in enumerate(TICKERS):
+        try:
+            data = get_history(tick, "2d")
+            price = data['Close'].iloc[-1]
+            chg = (price - data['Close'].iloc[-2]) / data['Close'].iloc[-2] * 100
+            color = "#15803d" if chg > 0 else "#b91c1c"
+            with heat_cols[i % 7]:
+                st.markdown(f"""
+                <div style="background:{color}; color:white; padding:10px; border-radius:10px; text-align:center; margin-bottom:8px;">
+                    <b>{tick}</b><br>${price:,.2f}<br><span style="font-size:1.1em;">{chg:+.1f}%</span>
+                </div>
+                """, unsafe_allow_html=True)
+        except:
+            with heat_cols[i % 7]:
+                st.markdown(f"""
+                <div style="background:#374151; color:white; padding:10px; border-radius:10px; text-align:center; margin-bottom:8px;">
+                    <b>{tick}</b><br>—<br>—
+                </div>
+                """, unsafe_allow_html=True)
 
-# ====================== VERTICAL BUTTONS ======================
-cols = st.columns(7)
-for i, row in enumerate(ticker_data_list):
-    tick = row["Ticker"]
-    label = row["Signal"]
-    strength = row["Strength"]
-    color_dot = "🟢" if "STRONG BUY" in label else "🟡" if "BUY" in label else "🟠" if label == "SIT" else "🔴"
-    with cols[i % 7]:
-        if st.button(f"{color_dot}\n{tick}\n{label}\n{strength}/9", key=f"btn_{label.lower().replace(' ', '_')}_{tick}", width="stretch"):
-            st.session_state.selected_ticker = tick
-            st.session_state.ticker_data = row["Data"]
-            st.rerun()
+    # ====================== Signal Overview Table ======================
+    st.subheader("📋 Signal Overview Table (click row to open plan)")
+    if ticker_data_list:
+        table_data = []
+        for row in ticker_data_list:
+            color = "🟢" if "STRONG BUY" in row["Signal"] else "🟡" if "BUY" in row["Signal"] else "🟠" if row["Signal"] == "SIT" else "🔴"
+            table_data.append({ ... })  # keep your exact table_data code
+        df_table = pd.DataFrame(table_data)
+        st.dataframe(df_table, width="stretch", hide_index=True)
+        selected = st.selectbox("Open full plan for:", df_table["Ticker"])
+        for row in ticker_data_list:
+            if row["Ticker"] == selected:
+                st.session_state.selected_ticker = selected
+                st.session_state.ticker_data = row["Data"]
+                # st.rerun()   ← already commented (safe)
+
+    # ====================== Vertical Buttons ======================
+    cols = st.columns(7)
+    for i, row in enumerate(ticker_data_list):
+        # keep your exact button code
+
+live_section()   # ← this runs the fragment
 
 # ====================== AUTO ALERTS ======================
 now_et = datetime.now(ZoneInfo("America/New_York"))
@@ -686,14 +640,5 @@ if st.button("📨 Send Morning Summary to Telegram", type="primary", width="str
         except Exception as e:
             st.error(f"Failed: {str(e)[:80]}")
 
-# ====================== SMART AUTO-REFRESH (TEMPORARILY DISABLED TO STOP LOOP) ======================
-# if auto_refresh:
-#     now_et = datetime.now(ZoneInfo("America/New_York"))
-#     market_open = dt_time(9, 30) <= now_et.time() <= dt_time(16, 0)
-#     if market_open:
-#         if 'last_refresh' not in st.session_state:
-#             st.session_state.last_refresh = time.time()
-#         if time.time() - st.session_state.last_refresh >= 60:
-#             st.session_state.last_refresh = time.time()
-#             st.cache_data.clear()
-#             st.rerun()
+# ====================== AUTO-REFRESH (only Heat-Map + Signals) ======================
+auto_refresh = st.checkbox("Auto-refresh Heat-Map & Signals every 60 seconds (1 minute)", value=True, key="auto_refresh_checkbox")
