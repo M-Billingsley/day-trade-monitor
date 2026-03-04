@@ -365,7 +365,7 @@ if ticker_data_list:
             "MACD Hist": round(row["Data"]["macd_hist"], 4)
         })
     df_table = pd.DataFrame(table_data)
-            df_table = df_table.sort_values(by="Strength", ascending=False)
+        df_table = df_table.sort_values(by="Strength", ascending=False)
         st.dataframe(df_table, width="stretch", height=530, hide_index=True)
         
         # Narrowed (~half page), centered, and bolder dropdown
