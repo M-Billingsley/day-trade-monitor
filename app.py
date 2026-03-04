@@ -217,18 +217,22 @@ with st.expander("🆕 New to Telegram? Full Setup Guide (3 minutes)", expanded=
     """)
     st.success("✅ Setup complete — you’re ready for alerts!")
 
-# ====================== ACCOUNT SIZE (narrower box) ======================
-col1, col2 = st.columns([1.2, 2])   # ← Narrower account size box
-with col1:
+# ====================== INPUT CONTROLS - ONE ROW (wider Account Size box) ======================
+input_cols = st.columns([2.5, 1.3, 1.4])
+
+with input_cols[0]:
     account_size = st.number_input("Trading Account Size $", value=30000, step=1000, format="%d")
-with col2:
+
+with input_cols[1]:
     risk_pct = st.selectbox("Risk per Trade", ["0.5%", "1.0%", "1.5%", "2.0%", "3.0%"], index=1)
+
+with input_cols[2]:
+    strategy_mode = st.selectbox("Strategy Mode", ["Balanced (more opportunities)", "Strict (higher win rate)"], index=0)
+
+is_strict = strategy_mode.startswith("Strict")
+
 base_risk_dollars = account_size * float(risk_pct.strip("%")) / 100
 st.caption(f"**Base Max Loss (fixed risk):** ${base_risk_dollars:,.0f} ({risk_pct})")
-
-# ====================== STRATEGY MODE (added here so is_strict is always defined) ======================
-strategy_mode = st.selectbox("Strategy Mode", ["Balanced (more opportunities)", "Strict (higher win rate)"], index=0)
-is_strict = strategy_mode.startswith("Strict")
 
 refresh_col, auto_col = st.columns([1, 3])
 with refresh_col:
