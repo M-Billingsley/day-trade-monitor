@@ -217,8 +217,8 @@ with st.expander("🆕 New to Telegram? Full Setup Guide (3 minutes)", expanded=
     """)
     st.success("✅ Setup complete — you’re ready for alerts!")
 
-# ====================== INPUT CONTROLS - ONE ROW (wider Account Size box) ======================
-input_cols = st.columns([2.5, 1.3, 1.4])
+# ====================== INPUT CONTROLS - ONE ROW (wider Account Size for + / - buttons) ======================
+input_cols = st.columns([3.5, 1.3, 1.4])   # ← widened first column
 
 with input_cols[0]:
     account_size = st.number_input("Trading Account Size $", value=30000, step=1000, format="%d")
