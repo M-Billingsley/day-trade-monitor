@@ -17,7 +17,7 @@ st.set_page_config(
     page_title="Day Trade Monitor",
     page_icon="📈",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"  # No sidebar wanted
 )
 
 # ====================== GLOBAL STYLING ======================
@@ -147,65 +147,7 @@ for prefix, section in [("twilio_", "twilio"), ("telegram_", "telegram")]:
         if sess_key not in st.session_state:
             st.session_state[sess_key] = secrets[section][key]
 
-# ====================== SIDEBAR ======================
-with st.sidebar:
-    st.header("📈 Live Market Data")
-    if st.button("🔄 Force Refresh Now (All Data)", type="primary", width="stretch"):
-        st.cache_data.clear()
-        st.rerun()
-    st.caption("Auto-refresh every 10s during market hours only")
-    st.subheader("Major Indices")
-    for sym, name in zip(["^DJI", "^IXIC", "^GSPC"], ["Dow", "Nasdaq", "S&P 500"]):
-        try:
-            data = get_history(sym, "2d")
-            if len(data) > 1:
-                price = data['Close'].iloc[-1]
-                chg = (price - data['Close'].iloc[-2]) / data['Close'].iloc[-2] * 100
-                st.metric(name, f"{price:,.0f}", f"{chg:+.2f}%")
-        except:
-            st.metric(name, "—")
-    st.divider()
-    st.subheader("Your Tickers")
-    for tick in TICKERS:
-        try:
-            data = get_history(tick, "5d")
-            if len(data) > 1:
-                price = data['Close'].iloc[-1]
-                chg = (price - data['Close'].iloc[-2]) / data['Close'].iloc[-2] * 100
-                st.metric(tick, f"${price:,.2f}", f"{chg:+.1f}%")
-        except:
-            st.metric(tick, "—")
-    st.divider()
-    st.subheader("Key Underlyings")
-    for u in KEY_UNDERLYINGS:
-        try:
-            price = get_history(u, "1d")['Close'].iloc[-1]
-            st.metric(u, f"${price:,.2f}")
-        except:
-            st.metric(u, "—")
-    st.divider()
-    now_et = datetime.now(ZoneInfo("America/New_York"))
-    st.caption(f"🔄 Last refreshed: {now_et.strftime('%H:%M:%S ET')}")
-    st.subheader("Strategy Settings")
-    strategy_mode = st.selectbox("Strategy Mode", ["Balanced (more opportunities)", "Strict (higher win rate)"], index=0)
-    is_strict = strategy_mode.startswith("Strict")
-    st.subheader("📲 Telegram Alerts")
-    tg_token = st.text_input("Telegram Bot Token", type="password", value=st.session_state.get("telegram_token", ""))
-    tg_chat = st.text_input("Chat ID", value=st.session_state.get("telegram_chat_id", ""))
-    st.caption("Get from @BotFather and @userinfobot")
-    if tg_token and tg_chat:
-        st.session_state.telegram_token = tg_token
-        st.session_state.telegram_chat_id = tg_chat
-        st.success("✅ Telegram saved")
-    if st.button("🔵 Send Test Telegram Now"):
-        try:
-            bot = TeleBot(st.session_state.telegram_token)
-            bot.send_message(st.session_state.telegram_chat_id, "✅ TEST SUCCESSFUL! Day Trade Monitor is ready 🚀")
-            st.success("✅ Test sent!")
-        except Exception as e:
-            st.error(f"Test failed: {str(e)[:80]}")
-
-# ====================== TITLE + REGIME + HEAT-MAP + ACCOUNT ======================
+# ====================== TITLE + REGIME ======================
 st.title("Day Trade Monitor")
 st.caption("High Risk / High Reward – Rules only, no emotion")
 
@@ -223,6 +165,34 @@ else:
     regime = "🔴 Choppy/Bearish Day – Caution Advised"
 st.markdown(f"<h3 style='text-align:center; background:#1e3a8a; color:white; padding:14px; border-radius:12px; margin-bottom:12px;'>{regime} (QQQ {qqq_chg:+.1f}%)</h3>", unsafe_allow_html=True)
 
+# ====================== BROAD MARKET INDICES (moved near top) ======================
+st.subheader("📊 Broad Market Indices")
+idx_cols = st.columns(3)
+with idx_cols[0]:
+    try:
+        data = get_history("^DJI", "2d")
+        price = data['Close'].iloc[-1]
+        chg = (price - data['Close'].iloc[-2]) / data['Close'].iloc[-2] * 100
+        st.metric("Dow", f"{price:,.0f}", f"{chg:+.2f}%")
+    except:
+        st.metric("Dow", "—")
+with idx_cols[1]:
+    try:
+        data = get_history("^IXIC", "2d")
+        price = data['Close'].iloc[-1]
+        chg = (price - data['Close'].iloc[-2]) / data['Close'].iloc[-2] * 100
+        st.metric("Nasdaq", f"{price:,.0f}", f"{chg:+.2f}%")
+    except:
+        st.metric("Nasdaq", "—")
+with idx_cols[2]:
+    try:
+        data = get_history("^GSPC", "2d")
+        price = data['Close'].iloc[-1]
+        chg = (price - data['Close'].iloc[-2]) / data['Close'].iloc[-2] * 100
+        st.metric("S&P 500", f"{price:,.0f}", f"{chg:+.2f}%")
+    except:
+        st.metric("S&P 500", "—")
+
 # Family Telegram Guide
 st.markdown("### 👨‍👩‍👧‍👦 Welcome to Day Trade Monitor – Family Edition")
 with st.expander("🆕 New to Telegram? Full Setup Guide (3 minutes)", expanded=False):
@@ -239,16 +209,13 @@ with st.expander("🆕 New to Telegram? Full Setup Guide (3 minutes)", expanded=
     8. Type `/start` and send.
     9. It will reply with `id: 123456789` (or a longer number)
        → **Copy just the number** (this is your **Chat ID**).
-    10. Back in this app → sidebar → **✉️ Telegram** tab.
-    11. Paste your Bot Token in the first box.
-        Paste your Chat ID in the second box.
+    10. Scroll to the bottom of this page → **📲 Telegram Alerts** section.
+    11. Paste your Bot Token and Chat ID.
     12. Click anywhere → you should see **✅ Telegram saved**.
     13. Click the blue **🔵 Send Test Telegram Now** button to test.
     Done! You will now get instant alerts on every **STRONG BUY**.
     """)
     st.success("✅ Setup complete — you’re ready for alerts!")
-
-
 
 col1, col2 = st.columns([2, 1])
 with col1:
@@ -264,159 +231,153 @@ with refresh_col:
         st.rerun()
 with auto_col:
     auto_refresh = st.checkbox("Auto-refresh Heat-Map & Signals every 60 seconds (1 minute)", value=True, key="auto_refresh_checkbox")
-    
-# Defensive defaults so sidebar + rest of app loads (fragment is off)
+
+# Defensive defaults (keeps everything stable)
 ticker_data_list = []
 qqq_chg_from_open = 0.0
 if 'ticker_data_list' not in st.session_state:
     st.session_state.ticker_data_list = []
 
-# Calculate QQQ change for Trade Plan (needed outside the fragment)
+# Calculate QQQ change for Trade Plan
 qqq_hist = get_history("QQQ", "5d")
 qqq_open = qqq_hist['Open'].iloc[-1] if not qqq_hist.empty else 0
 qqq_curr = qqq_hist['Close'].iloc[-1] if not qqq_hist.empty else 0
 qqq_chg_from_open = (qqq_curr - qqq_open) / qqq_open * 100 if qqq_open != 0 else 0
 
-# ====================== LIVE REFRESH SECTION (Heat-Map + Signals only) ======================
-@st.fragment(run_every=60)
-def live_section():
-    st.subheader("🚀 Trade Signals")
-    ticker_data_list = []
-    qqq_hist = get_history("QQQ", "5d")
-    qqq_open = qqq_hist['Open'].iloc[-1] if not qqq_hist.empty else 0
-    qqq_curr = qqq_hist['Close'].iloc[-1] if not qqq_hist.empty else 0
-    qqq_chg_from_open = (qqq_curr - qqq_open) / qqq_open * 100 if qqq_open != 0 else 0
+# ====================== SIGNALS + HEAT-MAP ======================
+st.subheader("🚀 Trade Signals")
+ticker_data_list = []
+qqq_hist = get_history("QQQ", "5d")
+qqq_open = qqq_hist['Open'].iloc[-1] if not qqq_hist.empty else 0
+qqq_curr = qqq_hist['Close'].iloc[-1] if not qqq_hist.empty else 0
+qqq_chg_from_open = (qqq_curr - qqq_open) / qqq_open * 100 if qqq_open != 0 else 0
 
-    for tick in TICKERS:
-        try:
-            hist = get_history(tick, "5d")
-            if hist.empty: continue
-            prev_close = hist['Close'].iloc[-2] if len(hist) > 1 else hist['Close'].iloc[-1]
-            curr = hist['Close'].iloc[-1]
-            today_open = hist['Open'].iloc[-1]
-            chg_from_open = (curr - today_open) / today_open * 100
-            prev_vol = hist['Volume'].iloc[-2] if len(hist) > 1 else 0
-            curr_vol = hist['Volume'].iloc[-1]
-            vol_ok = curr_vol > prev_vol * (1.5 if not is_strict else 1.8)
-            delta = hist['Close'].diff()
-            gain = delta.where(delta > 0, 0).rolling(14).mean()
-            loss = -delta.where(delta < 0, 0).rolling(14).mean().abs()
-            loss_safe = loss.replace(0, 1e-10)
-            rs = gain / loss_safe
-            rsi = max(0, min(100, 100 - (100 / (1 + rs)).iloc[-1]))
-            rsi_ok = rsi < (78 if not is_strict else 75)
-            ema50 = hist['Close'].ewm(span=50, adjust=False).mean().iloc[-1]
-            ema200 = hist['Close'].ewm(span=200, adjust=False).mean().iloc[-1]
-            bull = ema50 > ema200
-            ema9 = hist['Close'].ewm(span=9, adjust=False).mean().iloc[-1]
-            near_9ema = abs(curr - ema9) / ema9 < (0.02 if not is_strict else 0.015)
-            now_et_time = datetime.now(ZoneInfo("America/New_York")).time()
-            time_ok = dt_time(9, 30) <= now_et_time <= dt_time(12, 0) if not is_strict else dt_time(9, 45) <= now_et_time <= dt_time(11, 30)
-            ema12 = hist['Close'].ewm(span=12, adjust=False).mean()
-            ema26 = hist['Close'].ewm(span=26, adjust=False).mean()
-            macd_line = ema12 - ema26
-            signal_line = macd_line.ewm(span=9, adjust=False).mean()
-            macd_hist = macd_line - signal_line
-            macd_bullish = macd_line.iloc[-1] > signal_line.iloc[-1]
-            hist_positive = macd_hist.iloc[-1] > 0
-            hist_rising = macd_hist.iloc[-1] > macd_hist.iloc[-2] if len(macd_hist) > 1 else False
-            histogram_ok = hist_positive and (hist_rising if is_strict else True)
-            rel_strength_ok = chg_from_open > qqq_chg_from_open - 0.5
-            conditions_met = sum([bull, vol_ok, rsi_ok, chg_from_open < (4.5 if not is_strict else 3),
-                                  near_9ema, time_ok, macd_bullish, histogram_ok, rel_strength_ok])
-            if conditions_met >= 9:
-                label = "STRONG BUY"
-            elif conditions_met >= 7 and time_ok:
-                label = "BUY"
-            elif chg_from_open > 6 or rsi > 82:
-                label = "SIT"
-            else:
-                label = "SHORT"
-            ticker_data_list.append({
-                "Ticker": tick,
-                "Price": round(curr, 2),
-                "Chg %": round(chg_from_open, 1),
-                "Strength": conditions_met,
-                "Signal": label,
-                "Data": {
-                    "curr": curr, "prev": prev_close, "chg_from_open": chg_from_open,
-                    "rsi": rsi, "bull": bull, "vol_ok": vol_ok, "near_9ema": near_9ema,
-                    "time_ok": time_ok, "macd_bullish": macd_bullish, "histogram_ok": histogram_ok,
-                    "rel_strength_ok": rel_strength_ok, "label": label, "strength": conditions_met,
-                    "ema9": ema9, "vol_ratio": curr_vol / prev_vol if prev_vol > 0 else 1.0,
-                    "macd_line": macd_line.iloc[-1], "macd_hist": macd_hist.iloc[-1],
-                    "dist_9ema_pct": abs(curr - ema9) / ema9 * 100 if ema9 != 0 else 0
-                }
-            })
-        except:
-            pass
+for tick in TICKERS:
+    try:
+        hist = get_history(tick, "5d")
+        if hist.empty: continue
+        prev_close = hist['Close'].iloc[-2] if len(hist) > 1 else hist['Close'].iloc[-1]
+        curr = hist['Close'].iloc[-1]
+        today_open = hist['Open'].iloc[-1]
+        chg_from_open = (curr - today_open) / today_open * 100
+        prev_vol = hist['Volume'].iloc[-2] if len(hist) > 1 else 0
+        curr_vol = hist['Volume'].iloc[-1]
+        vol_ok = curr_vol > prev_vol * (1.5 if not is_strict else 1.8)
+        delta = hist['Close'].diff()
+        gain = delta.where(delta > 0, 0).rolling(14).mean()
+        loss = -delta.where(delta < 0, 0).rolling(14).mean().abs()
+        loss_safe = loss.replace(0, 1e-10)
+        rs = gain / loss_safe
+        rsi = max(0, min(100, 100 - (100 / (1 + rs)).iloc[-1]))
+        rsi_ok = rsi < (78 if not is_strict else 75)
+        ema50 = hist['Close'].ewm(span=50, adjust=False).mean().iloc[-1]
+        ema200 = hist['Close'].ewm(span=200, adjust=False).mean().iloc[-1]
+        bull = ema50 > ema200
+        ema9 = hist['Close'].ewm(span=9, adjust=False).mean().iloc[-1]
+        near_9ema = abs(curr - ema9) / ema9 < (0.02 if not is_strict else 0.015)
+        now_et_time = datetime.now(ZoneInfo("America/New_York")).time()
+        time_ok = dt_time(9, 30) <= now_et_time <= dt_time(12, 0) if not is_strict else dt_time(9, 45) <= now_et_time <= dt_time(11, 30)
+        ema12 = hist['Close'].ewm(span=12, adjust=False).mean()
+        ema26 = hist['Close'].ewm(span=26, adjust=False).mean()
+        macd_line = ema12 - ema26
+        signal_line = macd_line.ewm(span=9, adjust=False).mean()
+        macd_hist = macd_line - signal_line
+        macd_bullish = macd_line.iloc[-1] > signal_line.iloc[-1]
+        hist_positive = macd_hist.iloc[-1] > 0
+        hist_rising = macd_hist.iloc[-1] > macd_hist.iloc[-2] if len(macd_hist) > 1 else False
+        histogram_ok = hist_positive and (hist_rising if is_strict else True)
+        rel_strength_ok = chg_from_open > qqq_chg_from_open - 0.5
+        conditions_met = sum([bull, vol_ok, rsi_ok, chg_from_open < (4.5 if not is_strict else 3),
+                              near_9ema, time_ok, macd_bullish, histogram_ok, rel_strength_ok])
+        if conditions_met >= 9:
+            label = "STRONG BUY"
+        elif conditions_met >= 7 and time_ok:
+            label = "BUY"
+        elif chg_from_open > 6 or rsi > 82:
+            label = "SIT"
+        else:
+            label = "SHORT"
+        ticker_data_list.append({
+            "Ticker": tick,
+            "Price": round(curr, 2),
+            "Chg %": round(chg_from_open, 1),
+            "Strength": conditions_met,
+            "Signal": label,
+            "Data": {
+                "curr": curr, "prev": prev_close, "chg_from_open": chg_from_open,
+                "rsi": rsi, "bull": bull, "vol_ok": vol_ok, "near_9ema": near_9ema,
+                "time_ok": time_ok, "macd_bullish": macd_bullish, "histogram_ok": histogram_ok,
+                "rel_strength_ok": rel_strength_ok, "label": label, "strength": conditions_met,
+                "ema9": ema9, "vol_ratio": curr_vol / prev_vol if prev_vol > 0 else 1.0,
+                "macd_line": macd_line.iloc[-1], "macd_hist": macd_hist.iloc[-1],
+                "dist_9ema_pct": abs(curr - ema9) / ema9 * 100 if ema9 != 0 else 0
+            }
+        })
+    except:
+        pass
 
-    # ====================== LIVE HEAT-MAP ======================
-    st.subheader("📈 Live Heat-Map – All 14 Tickers")
-    heat_cols = st.columns(7)
-    for i, tick in enumerate(TICKERS):
-        try:
-            data = get_history(tick, "2d")
-            price = data['Close'].iloc[-1]
-            chg = (price - data['Close'].iloc[-2]) / data['Close'].iloc[-2] * 100
-            color = "#15803d" if chg > 0 else "#b91c1c"
-            with heat_cols[i % 7]:
-                st.markdown(f"""
-                <div style="background:{color}; color:white; padding:10px; border-radius:10px; text-align:center; margin-bottom:8px;">
-                    <b>{tick}</b><br>${price:,.2f}<br><span style="font-size:1.1em;">{chg:+.1f}%</span>
-                </div>
-                """, unsafe_allow_html=True)
-        except:
-            with heat_cols[i % 7]:
-                st.markdown(f"""
-                <div style="background:#374151; color:white; padding:10px; border-radius:10px; text-align:center; margin-bottom:8px;">
-                    <b>{tick}</b><br>—<br>—
-                </div>
-                """, unsafe_allow_html=True)
+# ====================== LIVE HEAT-MAP ======================
+st.subheader("📈 Live Heat-Map – All 14 Tickers")
+heat_cols = st.columns(7)
+for i, tick in enumerate(TICKERS):
+    try:
+        data = get_history(tick, "2d")
+        price = data['Close'].iloc[-1]
+        chg = (price - data['Close'].iloc[-2]) / data['Close'].iloc[-2] * 100
+        color = "#15803d" if chg > 0 else "#b91c1c"
+        with heat_cols[i % 7]:
+            st.markdown(f"""
+            <div style="background:{color}; color:white; padding:10px; border-radius:10px; text-align:center; margin-bottom:8px;">
+                <b>{tick}</b><br>${price:,.2f}<br><span style="font-size:1.1em;">{chg:+.1f}%</span>
+            </div>
+            """, unsafe_allow_html=True)
+    except:
+        with heat_cols[i % 7]:
+            st.markdown(f"""
+            <div style="background:#374151; color:white; padding:10px; border-radius:10px; text-align:center; margin-bottom:8px;">
+                <b>{tick}</b><br>—<br>—
+            </div>
+            """, unsafe_allow_html=True)
 
-    # ====================== SIGNAL OVERVIEW TABLE ======================
-    st.subheader("📋 Signal Overview Table (click row to open plan)")
-    if ticker_data_list:
-        table_data = []
-        for row in ticker_data_list:
-            color = "🟢" if "STRONG BUY" in row["Signal"] else "🟡" if "BUY" in row["Signal"] else "🟠" if row["Signal"] == "SIT" else "🔴"
-            table_data.append({
-                "Signal": f"{color} {row['Signal']}",
-                "Ticker": row["Ticker"],
-                "Strength": row["Strength"],
-                "Price": row["Price"],
-                "Chg %": row["Chg %"],
-                "RSI": round(row["Data"]["rsi"], 1),
-                "Vol ×": round(row["Data"]["vol_ratio"], 1),
-                "To 9EMA %": round(row["Data"]["dist_9ema_pct"], 2),
-                "MACD Hist": round(row["Data"]["macd_hist"], 4)
-            })
-        df_table = pd.DataFrame(table_data)
-        st.dataframe(df_table, width="stretch", hide_index=True)
-        selected = st.selectbox("Open full plan for:", df_table["Ticker"])
-        for row in ticker_data_list:
-            if row["Ticker"] == selected:
-                st.session_state.selected_ticker = selected
-                st.session_state.ticker_data = row["Data"]
-                # st.rerun()   ← safely commented out
+# ====================== SIGNAL OVERVIEW TABLE ======================
+st.subheader("📋 Signal Overview Table (click row to open plan)")
+if ticker_data_list:
+    table_data = []
+    for row in ticker_data_list:
+        color = "🟢" if "STRONG BUY" in row["Signal"] else "🟡" if "BUY" in row["Signal"] else "🟠" if row["Signal"] == "SIT" else "🔴"
+        table_data.append({
+            "Signal": f"{color} {row['Signal']}",
+            "Ticker": row["Ticker"],
+            "Strength": row["Strength"],
+            "Price": row["Price"],
+            "Chg %": row["Chg %"],
+            "RSI": round(row["Data"]["rsi"], 1),
+            "Vol ×": round(row["Data"]["vol_ratio"], 1),
+            "To 9EMA %": round(row["Data"]["dist_9ema_pct"], 2),
+            "MACD Hist": round(row["Data"]["macd_hist"], 4)
+        })
+    df_table = pd.DataFrame(table_data)
+    st.dataframe(df_table, width="stretch", hide_index=True)
+    selected = st.selectbox("Open full plan for:", df_table["Ticker"])
+    for row in ticker_data_list:
+        if row["Ticker"] == selected:
+            st.session_state.selected_ticker = selected
+            st.session_state.ticker_data = row["Data"]
 
-       # ====================== VERTICAL BUTTONS ======================
-    cols = st.columns(7)
-    for i, row in enumerate(ticker_data_list):
-        tick = row["Ticker"]
-        label = row["Signal"]
-        strength = row["Strength"]
-        color_dot = "🟢" if "STRONG BUY" in label else "🟡" if "BUY" in label else "🟠" if label == "SIT" else "🔴"
-        with cols[i % 7]:
-            if st.button(f"{color_dot}\n{tick}\n{label}\n{strength}/9", key=f"btn_{label.lower().replace(' ', '_')}_{tick}", width="stretch"):
-                st.session_state.selected_ticker = tick
-                st.session_state.ticker_data = row["Data"]
-                st.rerun()
+# ====================== VERTICAL BUTTONS ======================
+cols = st.columns(7)
+for i, row in enumerate(ticker_data_list):
+    tick = row["Ticker"]
+    label = row["Signal"]
+    strength = row["Strength"]
+    color_dot = "🟢" if "STRONG BUY" in label else "🟡" if "BUY" in label else "🟠" if label == "SIT" else "🔴"
+    with cols[i % 7]:
+        if st.button(f"{color_dot}\n{tick}\n{label}\n{strength}/9", key=f"btn_{label.lower().replace(' ', '_')}_{tick}", width="stretch"):
+            st.session_state.selected_ticker = tick
+            st.session_state.ticker_data = row["Data"]
+            st.rerun()
 
-    # ←←← ADD THIS LINE HERE (saves data for alerts & sidebar)
-    st.session_state.ticker_data_list = ticker_data_list
-
-live_section()  # ← TEMPORARILY COMMENTED OUT TO BRING SIDEBAR BACK
+st.session_state.ticker_data_list = ticker_data_list
 
 # ====================== AUTO ALERTS ======================
 ticker_data_list = st.session_state.get("ticker_data_list", [])
@@ -708,3 +669,27 @@ if st.button("📨 Send Morning Summary to Telegram", type="primary", width="str
             st.success("✅ Morning summary sent!")
         except Exception as e:
             st.error(f"Failed: {str(e)[:80]}")
+
+# ====================== TELEGRAM ALERTS (moved to very bottom) ======================
+st.subheader("📲 Telegram Alerts")
+tg_token = st.text_input("Telegram Bot Token", type="password", value=st.session_state.get("telegram_token", ""))
+tg_chat = st.text_input("Chat ID", value=st.session_state.get("telegram_chat_id", ""))
+st.caption("Get from @BotFather and @userinfobot")
+if tg_token and tg_chat:
+    st.session_state.telegram_token = tg_token
+    st.session_state.telegram_chat_id = tg_chat
+    st.success("✅ Telegram saved")
+if st.button("🔵 Send Test Telegram Now"):
+    try:
+        bot = TeleBot(st.session_state.telegram_token)
+        bot.send_message(st.session_state.telegram_chat_id, "✅ TEST SUCCESSFUL! Day Trade Monitor is ready 🚀")
+        st.success("✅ Test sent!")
+    except Exception as e:
+        st.error(f"Test failed: {str(e)[:80]}")
+
+# ====================== SAFE 60-SECOND REFRESH ======================
+if 'last_refresh' not in st.session_state:
+    st.session_state.last_refresh = time.time() - 70
+if auto_refresh and time.time() - st.session_state.last_refresh >= 60:
+    st.session_state.last_refresh = time.time()
+    st.rerun()
