@@ -693,6 +693,6 @@ if auto_refresh:
     if time.time() - st.session_state.last_refresh >= 60:
         st.session_state.last_refresh = time.time()
         st.cache_data.clear()
-        st.rerun()
+    
             
 st.caption("✅ Fully fixed – auto-refresh now 60 seconds, account size clean integer, no more warnings!")
