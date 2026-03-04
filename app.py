@@ -348,7 +348,7 @@ def live_section():
     for i, row in enumerate(ticker_data_list):
         # keep your exact button code
 
-live_section()   # ← this runs the fragment
+    live_section()   # ← this runs the fragment
 
 # ====================== AUTO ALERTS ======================
 now_et = datetime.now(ZoneInfo("America/New_York"))
