@@ -165,7 +165,7 @@ else:
     regime = "🔴 Choppy/Bearish Day – Caution Advised"
 st.markdown(f"<h3 style='text-align:center; background:#1e3a8a; color:white; padding:14px; border-radius:12px; margin-bottom:12px;'>{regime} (QQQ {qqq_chg:+.1f}%)</h3>", unsafe_allow_html=True)
 
-# ====================== BROAD MARKET INDICES (moved near top) ======================
+# ====================== BROAD MARKET INDICES ======================
 st.subheader("📊 Broad Market Indices")
 idx_cols = st.columns(3)
 with idx_cols[0]:
@@ -225,6 +225,10 @@ with col2:
 base_risk_dollars = account_size * float(risk_pct.strip("%")) / 100
 st.caption(f"**Base Max Loss (fixed risk):** ${base_risk_dollars:,.0f} ({risk_pct})")
 
+# ====================== STRATEGY MODE (added here so is_strict is always defined) ======================
+strategy_mode = st.selectbox("Strategy Mode", ["Balanced (more opportunities)", "Strict (higher win rate)"], index=0)
+is_strict = strategy_mode.startswith("Strict")
+
 refresh_col, auto_col = st.columns([1, 3])
 with refresh_col:
     if st.button("🔄 Refresh All Data", type="primary", width="stretch"):
@@ -232,7 +236,7 @@ with refresh_col:
 with auto_col:
     auto_refresh = st.checkbox("Auto-refresh Heat-Map & Signals every 60 seconds (1 minute)", value=True, key="auto_refresh_checkbox")
 
-# Defensive defaults (keeps everything stable)
+# Defensive defaults
 ticker_data_list = []
 qqq_chg_from_open = 0.0
 if 'ticker_data_list' not in st.session_state:
@@ -670,7 +674,7 @@ if st.button("📨 Send Morning Summary to Telegram", type="primary", width="str
         except Exception as e:
             st.error(f"Failed: {str(e)[:80]}")
 
-# ====================== TELEGRAM ALERTS (moved to very bottom) ======================
+# ====================== TELEGRAM ALERTS (at very bottom) ======================
 st.subheader("📲 Telegram Alerts")
 tg_token = st.text_input("Telegram Bot Token", type="password", value=st.session_state.get("telegram_token", ""))
 tg_chat = st.text_input("Chat ID", value=st.session_state.get("telegram_chat_id", ""))
