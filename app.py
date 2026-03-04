@@ -373,21 +373,6 @@ if ticker_data_list:
             st.session_state.selected_ticker = selected
             st.session_state.ticker_data = row["Data"]
 
-# ====================== VERTICAL BUTTONS ======================
-cols = st.columns(7)
-for i, row in enumerate(ticker_data_list):
-    tick = row["Ticker"]
-    label = row["Signal"]
-    strength = row["Strength"]
-    color_dot = "🟢" if "STRONG BUY" in label else "🟡" if "BUY" in label else "🟠" if label == "SIT" else "🔴"
-    with cols[i % 7]:
-        if st.button(f"{color_dot}\n{tick}\n{label}\n{strength}/9", key=f"btn_{label.lower().replace(' ', '_')}_{tick}", width="stretch"):
-            st.session_state.selected_ticker = tick
-            st.session_state.ticker_data = row["Data"]
-            st.rerun()
-
-st.session_state.ticker_data_list = ticker_data_list
-
 # ====================== AUTO ALERTS ======================
 ticker_data_list = st.session_state.get("ticker_data_list", [])
 now_et = datetime.now(ZoneInfo("America/New_York"))
