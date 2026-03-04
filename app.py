@@ -217,7 +217,8 @@ with st.expander("🆕 New to Telegram? Full Setup Guide (3 minutes)", expanded=
     """)
     st.success("✅ Setup complete — you’re ready for alerts!")
 
-col1, col2 = st.columns([2, 1])
+# ====================== ACCOUNT SIZE (narrower box) ======================
+col1, col2 = st.columns([1.2, 2])   # ← Narrower account size box
 with col1:
     account_size = st.number_input("Trading Account Size $", value=30000, step=1000, format="%d")
 with col2:
