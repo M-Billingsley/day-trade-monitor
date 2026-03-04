@@ -365,7 +365,7 @@ if ticker_data_list:
             "MACD Hist": round(row["Data"]["macd_hist"], 4)
         })
     df_table = pd.DataFrame(table_data)
-    st.dataframe(df_table, width="stretch", hide_index=True)
+    st.dataframe(df_table, width="stretch", height=520, hide_index=True)   # ← taller so all rows fit without scrolling
     selected = st.selectbox("Open full plan for:", df_table["Ticker"])
     for row in ticker_data_list:
         if row["Ticker"] == selected:
