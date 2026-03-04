@@ -348,7 +348,7 @@ for i, tick in enumerate(TICKERS):
             """, unsafe_allow_html=True)
 
 # ====================== SIGNAL OVERVIEW TABLE ======================
-st.subheader("📋 Signal Overview Table (click row to open plan)")
+st.subheader("📋 Signal Overview Table (Select Ticker Below Table)")
 if ticker_data_list:
     table_data = []
     for row in ticker_data_list:
