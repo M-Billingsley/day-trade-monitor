@@ -693,7 +693,7 @@ if st.button("📨 Send Morning Summary to Telegram", type="primary", width="str
         try:
             bot = TeleBot(st.session_state.telegram_token)
             summary = f"📈 Day Trade Monitor Morning Summary\n\nMarket Regime: {regime}\n\nSTRONG BUY Signals:\n"
-                        strong = [row for row in st.session_state.get("ticker_data_list", []) if row["Signal"] == "STRONG BUY"]
+                strong = [row for row in st.session_state.get("ticker_data_list", []) if row["Signal"] == "STRONG BUY"]
             for row in strong:
                 summary += f"• {row['Ticker']} @ ${row['Price']} (+{row['Chg %']}%) — {row['Strength']}/9\n"
             if not strong:
