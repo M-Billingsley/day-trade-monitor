@@ -416,7 +416,7 @@ def live_section():
     # ←←← ADD THIS LINE HERE (saves data for alerts & sidebar)
     st.session_state.ticker_data_list = ticker_data_list
 
-# live_section()  # ← TEMPORARILY COMMENTED OUT TO BRING SIDEBAR BACK
+live_section()  # ← TEMPORARILY COMMENTED OUT TO BRING SIDEBAR BACK
 
 # ====================== AUTO ALERTS ======================
 ticker_data_list = st.session_state.get("ticker_data_list", [])
