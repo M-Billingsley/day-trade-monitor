@@ -686,16 +686,16 @@ if st.button("📨 Send Morning Summary to Telegram", type="primary", width="str
         except Exception as e:
             st.error(f"Failed: {str(e)[:80]}")
 
-# ====================== SMART AUTO-REFRESH (60 seconds) ======================
+# ====================== SMART AUTO-REFRESH (60 seconds - fixed) ======================
 if auto_refresh:
     now_et = datetime.now(ZoneInfo("America/New_York"))
     market_open = dt_time(9, 30) <= now_et.time() <= dt_time(16, 0)
     if market_open:
         if 'last_refresh' not in st.session_state:
-            st.session_state.last_refresh = time.time()
+            st.session_state.last_refresh = time.time() - 61  # Force first refresh
         if time.time() - st.session_state.last_refresh >= 60:
             st.session_state.last_refresh = time.time()
             st.cache_data.clear()
             st.rerun()
-
+            
 st.caption("✅ Fully fixed – auto-refresh now 60 seconds, account size clean integer, no more warnings!")
