@@ -713,19 +713,35 @@ if auto_morning and dt_time(8, 0) <= now_et.time() <= dt_time(9, 0):
             except Exception as e:
                 st.error(f"Auto morning send failed: {str(e)[:80]}")
 
-# Manual morning summary button (only one)
-if st.button("📨 Send Morning Summary to Telegram (Manual)", type="primary", width="stretch"):
+# ====================== MANUAL MORNING SUMMARY BUTTON (with image) ======================
+if st.button("📨 Send Morning Summary to Telegram (Manual with Image)", type="primary", width="stretch"):
     if "telegram_token" in st.session_state and "telegram_chat_id" in st.session_state:
         try:
             bot = TeleBot(st.session_state.telegram_token)
+            
             summary = f"📈 Day Trade Monitor Morning Summary\n\nMarket Regime: {regime}\n\nSTRONG BUY Signals:\n"
             strong = [row for row in st.session_state.get("ticker_data_list", []) if row["Signal"] == "STRONG BUY"]
             for row in strong:
                 summary += f"• {row['Ticker']} @ ${row['Price']} (+{row['Chg %']}%) — {row['Strength']}/9\n"
             if not strong:
                 summary += "None right now\n"
+            
+            # Create Heat-Map + Table image
+            fig = go.Figure()
+            fig.add_trace(go.Table(
+                header=dict(values=list(df_table.columns), fill_color="lightblue", align="center"),
+                cells=dict(values=[df_table[col] for col in df_table.columns], align="center")
+            ))
+            fig.update_layout(title="Heat-Map & Signals Snapshot", height=600)
+            
+            img_bytes = BytesIO()
+            pio.write_image(fig, img_bytes, format="png")
+            img_bytes.seek(0)
+            
             bot.send_message(st.session_state.telegram_chat_id, summary)
-            st.success("✅ Manual morning summary sent!")
+            bot.send_photo(st.session_state.telegram_chat_id, photo=img_bytes, caption="📸 Heat-Map + Signals Snapshot")
+            
+            st.success("✅ Manual summary + image sent!")
         except Exception as e:
             st.error(f"Failed: {str(e)[:80]}")
 
