@@ -347,28 +347,29 @@ for i, tick in enumerate(TICKERS):
             </div>
             """, unsafe_allow_html=True)
 
-# ====================== SIGNAL OVERVIEW TABLE ======================
-st.subheader("📋 Signal Overview Table (click row to open plan)")
-if ticker_data_list:
-    table_data = []
-    for row in ticker_data_list:
-        color = "🟢" if "STRONG BUY" in row["Signal"] else "🟡" if "BUY" in row["Signal"] else "🟠" if row["Signal"] == "SIT" else "🔴"
-        table_data.append({
-            "Signal": f"{color} {row['Signal']}",
-            "Ticker": row["Ticker"],
-            "Strength": row["Strength"],
-            "Price": row["Price"],
-            "Chg %": row["Chg %"],
-            "RSI": round(row["Data"]["rsi"], 1),
-            "Vol ×": round(row["Data"]["vol_ratio"], 1),
-            "To 9EMA %": round(row["Data"]["dist_9ema_pct"], 2),
-            "MACD Hist": round(row["Data"]["macd_hist"], 4)
-        })
-    df_table = pd.DataFrame(table_data)
-            df_table = df_table.sort_values(by="Strength", ascending=False)
+    # ====================== SIGNAL OVERVIEW TABLE ======================
+    st.subheader("📋 Signal Overview Table (click row to open plan)")
+    if ticker_data_list:
+        table_data = []
+        for row in ticker_data_list:
+            color = "🟢" if "STRONG BUY" in row["Signal"] else "🟡" if "BUY" in row["Signal"] else "🟠" if row["Signal"] == "SIT" else "🔴"
+            table_data.append({
+                "Signal": f"{color} {row['Signal']}",
+                "Ticker": row["Ticker"],
+                "Strength": row["Strength"],
+                "Price": row["Price"],
+                "Chg %": row["Chg %"],
+                "RSI": round(row["Data"]["rsi"], 1),
+                "Vol ×": round(row["Data"]["vol_ratio"], 1),
+                "To 9EMA %": round(row["Data"]["dist_9ema_pct"], 2),
+                "MACD Hist": round(row["Data"]["macd_hist"], 4)
+            })
+        df_table = pd.DataFrame(table_data)
+        df_table = df_table.sort_values(by="Strength", ascending=False)
+        
         st.dataframe(df_table, width="stretch", height=530, hide_index=True)
         
-        # Narrowed (~half page), centered, and bolder dropdown
+        # Narrowed, centered, bolder dropdown
         st.markdown("<h4 style='text-align: center; margin-bottom: 8px;'>Open full plan for:</h4>", unsafe_allow_html=True)
         col1, col_mid, col3 = st.columns([1, 2, 1])
         with col_mid:
