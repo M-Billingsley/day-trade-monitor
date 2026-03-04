@@ -57,8 +57,7 @@ def run_intraday_backtest(tick: str, is_strict: bool):
         qqq_hist = yf.Ticker("QQQ").history(period="60d", interval="15m")
         hist.index = hist.index.tz_convert("America/New_York")
         qqq_hist.index = qqq_hist.index.tz_convert("America/New_York")
-        if len(hist) < 200:
-            return None
+        if len(hist) < 200: return None
         signals = wins = total_pl = 0
         pl_list = []
         max_win_streak = max_loss_streak = current_streak = 0
@@ -121,7 +120,7 @@ def run_intraday_backtest(tick: str, is_strict: bool):
         return None
 
 # ====================== CONFIG ======================
-DEFAULT_ACCOUNT_SIZE = 30000.0
+DEFAULT_ACCOUNT_SIZE = 30000
 CSV_FILE = "trade_log.csv"
 JOURNAL_FILE = "daily_signals.csv"
 TICKERS = ["SOXL", "TQQQ", "TECL", "SPXL", "FNGU", "BULZ", "TSLL", "NVDL", "BITX",
@@ -224,6 +223,7 @@ else:
     regime = "🔴 Choppy/Bearish Day – Caution Advised"
 st.markdown(f"<h3 style='text-align:center; background:#1e3a8a; color:white; padding:14px; border-radius:12px; margin-bottom:12px;'>{regime} (QQQ {qqq_chg:+.1f}%)</h3>", unsafe_allow_html=True)
 
+# Family Telegram Guide
 st.markdown("### 👨‍👩‍👧‍👦 Welcome to Day Trade Monitor – Family Edition")
 with st.expander("🆕 New to Telegram? Full Setup Guide (3 minutes)", expanded=False):
     st.markdown("""
@@ -281,10 +281,9 @@ st.caption(f"**Base Max Loss (fixed risk):** ${base_risk_dollars:,.0f} ({risk_pc
 refresh_col, auto_col = st.columns([1, 3])
 with refresh_col:
     if st.button("🔄 Refresh All Data", type="primary", width="stretch"):
-        st.cache_data.clear()
         st.rerun()
 with auto_col:
-        auto_refresh = st.checkbox("Auto-refresh market data every 60 seconds (1 minute)", value=True, key="auto_refresh_checkbox")
+    auto_refresh = st.checkbox("Auto-refresh market data every 60 seconds (1 minute)", value=True, key="auto_refresh_checkbox")
 
 # ====================== SIGNALS ======================
 st.subheader("🚀 Trade Signals")
@@ -459,7 +458,6 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
         st.metric("MACD Histogram", f"{data.get('macd_hist', 0):+.4f}")
         st.metric("9-EMA Value", f"${data.get('ema9', 0):,.2f}")
 
-    # NEW: Dynamic Risk + Override
     st.subheader("📏 Advanced Position Sizer")
     dynamic_risk = 2.0 if "STRONG BUY" in data.get("label", "") else 1.0
     use_dynamic = st.checkbox("Use dynamic risk based on signal strength", value=True)
@@ -688,7 +686,7 @@ if st.button("📨 Send Morning Summary to Telegram", type="primary", width="str
         except Exception as e:
             st.error(f"Failed: {str(e)[:80]}")
 
-# ====================== SMART AUTO-REFRESH ======================
+# ====================== SMART AUTO-REFRESH (60 seconds) ======================
 if auto_refresh:
     now_et = datetime.now(ZoneInfo("America/New_York"))
     market_open = dt_time(9, 30) <= now_et.time() <= dt_time(16, 0)
@@ -699,4 +697,5 @@ if auto_refresh:
             st.session_state.last_refresh = time.time()
             st.cache_data.clear()
             st.rerun()
-st.caption("✅ Fully upgraded with all 5 features + auto-refresh fix + $30,000 default + dynamic risk!")
+
+st.caption("✅ Fully fixed – auto-refresh now 60 seconds, account size clean integer, no more warnings!")
