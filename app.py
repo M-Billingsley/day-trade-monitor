@@ -217,11 +217,17 @@ with st.expander("🆕 New to Telegram? Full Setup Guide (3 minutes)", expanded=
     """)
     st.success("✅ Setup complete — you’re ready for alerts!")
 
-# ====================== INPUT CONTROLS - ONE ROW (wider Account Size for + / - buttons) ======================
-input_cols = st.columns([3.5, 1.3, 1.4])   # ← widened first column
+# ====================== INPUT CONTROLS - ONE ROW ( + / - buttons now visible ) ======================
+input_cols = st.columns([4.5, 1.3, 1.3])   # ← even wider first column
 
 with input_cols[0]:
-    account_size = st.number_input("Trading Account Size $", value=30000, step=1000, format="%d")
+    account_size = st.number_input(
+        "Trading Account Size $", 
+        value=30000, 
+        step=1000, 
+        min_value=1000, 
+        max_value=99999999   # ← your 8-digit limit (safety only)
+    )
 
 with input_cols[1]:
     risk_pct = st.selectbox("Risk per Trade", ["0.5%", "1.0%", "1.5%", "2.0%", "3.0%"], index=1)
@@ -233,13 +239,6 @@ is_strict = strategy_mode.startswith("Strict")
 
 base_risk_dollars = account_size * float(risk_pct.strip("%")) / 100
 st.caption(f"**Base Max Loss (fixed risk):** ${base_risk_dollars:,.0f} ({risk_pct})")
-
-refresh_col, auto_col = st.columns([1, 3])
-with refresh_col:
-    if st.button("🔄 Refresh All Data", type="primary", width="stretch"):
-        st.rerun()
-with auto_col:
-    auto_refresh = st.checkbox("Auto-refresh Heat-Map & Signals every 60 seconds (1 minute)", value=True, key="auto_refresh_checkbox")
 
 # Defensive defaults
 ticker_data_list = []
