@@ -386,7 +386,7 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
 
     st.success(f"🚀 **{data['label']} – {tick}**")
 
-   st.subheader("🔍 9 Trade Gates – Pass/Fail")
+    st.subheader("🔍 9 Trade Gates – Pass/Fail")
     dcols = st.columns(3)
     with dcols[0]:
         st.metric("Bullish Trend", "✅ PASS" if data["bull"] else "❌ FAIL")
