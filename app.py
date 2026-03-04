@@ -365,7 +365,7 @@ if ticker_data_list:
             "MACD Hist": round(row["Data"]["macd_hist"], 4)
         })
     df_table = pd.DataFrame(table_data)
-    df_table = df_table.sort_values(by="Strength", ascending=False)
+            df_table = df_table.sort_values(by="Strength", ascending=False)
         st.dataframe(df_table, width="stretch", height=530, hide_index=True)
         
         # Narrowed (~half page), centered, and bolder dropdown
@@ -373,10 +373,6 @@ if ticker_data_list:
         col1, col_mid, col3 = st.columns([1, 2, 1])
         with col_mid:
             selected = st.selectbox("", df_table["Ticker"], key="plan_select", label_visibility="collapsed")
-    for row in ticker_data_list:
-        if row["Ticker"] == selected:
-            st.session_state.selected_ticker = selected
-            st.session_state.ticker_data = row["Data"]
 
 # ====================== AUTO ALERTS ======================
 ticker_data_list = st.session_state.get("ticker_data_list", [])
