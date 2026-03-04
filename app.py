@@ -265,6 +265,12 @@ with refresh_col:
 with auto_col:
     auto_refresh = st.checkbox("Auto-refresh Heat-Map & Signals every 60 seconds (1 minute)", value=True, key="auto_refresh_checkbox")
     
+# Defensive defaults so sidebar + rest of app loads (fragment is off)
+ticker_data_list = []
+qqq_chg_from_open = 0.0
+if 'ticker_data_list' not in st.session_state:
+    st.session_state.ticker_data_list = []
+
 # Calculate QQQ change for Trade Plan (needed outside the fragment)
 qqq_hist = get_history("QQQ", "5d")
 qqq_open = qqq_hist['Open'].iloc[-1] if not qqq_hist.empty else 0
