@@ -657,23 +657,6 @@ with st.expander("📒 Trade Log"):
             )
     st.dataframe(trades_df.tail(10), width="stretch")
 
-# ====================== MORNING SUMMARY ======================
-st.markdown("---")
-if st.button("📨 Send Morning Summary to Telegram", type="primary", width="stretch"):
-    if "telegram_token" in st.session_state and "telegram_chat_id" in st.session_state:
-        try:
-            bot = TeleBot(st.session_state.telegram_token)
-            summary = f"📈 Day Trade Monitor Morning Summary\n\nMarket Regime: {regime}\n\nSTRONG BUY Signals:\n"
-            strong = [row for row in st.session_state.get("ticker_data_list", []) if row["Signal"] == "STRONG BUY"]
-            for row in strong:
-                summary += f"• {row['Ticker']} @ ${row['Price']} (+{row['Chg %']}%) — {row['Strength']}/9\n"
-            if not strong:
-                summary += "None right now\n"
-            bot.send_message(st.session_state.telegram_chat_id, summary)
-            st.success("✅ Morning summary sent!")
-        except Exception as e:
-            st.error(f"Failed: {str(e)[:80]}")
-
 # ====================== TELEGRAM ALERTS + DAILY AUTO MORNING (with opt-out) ======================
 st.subheader("📲 Telegram Alerts")
 tg_token = st.text_input("Telegram Bot Token", type="password", value=st.session_state.get("telegram_token", ""))
