@@ -284,7 +284,7 @@ with refresh_col:
         st.cache_data.clear()
         st.rerun()
 with auto_col:
-    auto_refresh = st.checkbox("Auto-refresh market data every 10 seconds", value=True, key="auto_refresh_checkbox")
+        auto_refresh = st.checkbox("Auto-refresh market data every 60 seconds (1 minute)", value=True, key="auto_refresh_checkbox")
 
 # ====================== SIGNALS ======================
 st.subheader("🚀 Trade Signals")
