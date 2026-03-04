@@ -365,9 +365,14 @@ if ticker_data_list:
             "MACD Hist": round(row["Data"]["macd_hist"], 4)
         })
     df_table = pd.DataFrame(table_data)
-    df_table = df_table.sort_values(by="Strength", ascending=False)   # ← auto-sort highest strength first
-    st.dataframe(df_table, width="stretch", height=530, hide_index=True)   # ← taller so all rows fit without scrolling
-    selected = st.selectbox("Open full plan for:", df_table["Ticker"])
+            df_table = df_table.sort_values(by="Strength", ascending=False)
+        st.dataframe(df_table, width="stretch", height=530, hide_index=True)
+        
+        # Narrowed (~half page), centered, and bolder dropdown
+        st.markdown("<h4 style='text-align: center; margin-bottom: 8px;'>Open full plan for:</h4>", unsafe_allow_html=True)
+        col1, col_mid, col3 = st.columns([1, 2, 1])
+        with col_mid:
+            selected = st.selectbox("", df_table["Ticker"], key="plan_select", label_visibility="collapsed")
     for row in ticker_data_list:
         if row["Ticker"] == selected:
             st.session_state.selected_ticker = selected
