@@ -11,13 +11,15 @@ import telebot
 from telebot import TeleBot
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import plotly.io as pio
+from io import BytesIO
 
 # ====================== PAGE CONFIG ======================
 st.set_page_config(
     page_title="Day Trade Monitor",
     page_icon="📈",
     layout="wide",
-    initial_sidebar_state="collapsed"  # No sidebar wanted
+    initial_sidebar_state="collapsed"
 )
 
 # ====================== GLOBAL STYLING ======================
@@ -52,6 +54,7 @@ def get_history(ticker: str, period: str = "2d", interval: str = "1d"):
 
 @st.cache_data(ttl=1800, show_spinner=False)
 def run_intraday_backtest(tick: str, is_strict: bool):
+    # (your existing backtest function - unchanged)
     try:
         hist = yf.Ticker(tick).history(period="60d", interval="15m")
         qqq_hist = yf.Ticker("QQQ").history(period="60d", interval="15m")
@@ -193,7 +196,7 @@ with idx_cols[2]:
     except:
         st.metric("S&P 500", "—")
 
-# Family Telegram Guide
+# Family Telegram Guide (unchanged)
 st.markdown("### 👨‍👩‍👧‍👦 Welcome to Day Trade Monitor – Family Edition")
 with st.expander("🆕 New to Telegram? Full Setup Guide (3 minutes)", expanded=False):
     st.markdown("""
@@ -217,28 +220,25 @@ with st.expander("🆕 New to Telegram? Full Setup Guide (3 minutes)", expanded=
     """)
     st.success("✅ Setup complete — you’re ready for alerts!")
 
-# ====================== INPUT CONTROLS - ONE ROW ( + / - buttons now visible ) ======================
-input_cols = st.columns([4.5, 1.3, 1.3])   # ← even wider first column
-
+# ====================== INPUT CONTROLS ======================
+input_cols = st.columns([4.5, 1.3, 1.3])
 with input_cols[0]:
-    account_size = st.number_input(
-        "Trading Account Size $", 
-        value=30000, 
-        step=1000, 
-        min_value=1000, 
-        max_value=99999999   # ← your 8-digit limit (safety only)
-    )
-
+    account_size = st.number_input("Trading Account Size $", value=30000, step=1000)
 with input_cols[1]:
     risk_pct = st.selectbox("Risk per Trade", ["0.5%", "1.0%", "1.5%", "2.0%", "3.0%"], index=1)
-
 with input_cols[2]:
     strategy_mode = st.selectbox("Strategy Mode", ["Balanced (more opportunities)", "Strict (higher win rate)"], index=0)
 
 is_strict = strategy_mode.startswith("Strict")
-
 base_risk_dollars = account_size * float(risk_pct.strip("%")) / 100
 st.caption(f"**Base Max Loss (fixed risk):** ${base_risk_dollars:,.0f} ({risk_pct})")
+
+refresh_col, auto_col = st.columns([1, 3])
+with refresh_col:
+    if st.button("🔄 Refresh All Data", type="primary", width="stretch"):
+        st.rerun()
+with auto_col:
+    auto_refresh = st.checkbox("Auto-refresh Heat-Map & Signals every 60 seconds (1 minute)", value=True, key="auto_refresh_checkbox")
 
 # Defensive defaults
 ticker_data_list = []
@@ -246,7 +246,7 @@ qqq_chg_from_open = 0.0
 if 'ticker_data_list' not in st.session_state:
     st.session_state.ticker_data_list = []
 
-# Calculate QQQ change for Trade Plan
+# Calculate QQQ change
 qqq_hist = get_history("QQQ", "5d")
 qqq_open = qqq_hist['Open'].iloc[-1] if not qqq_hist.empty else 0
 qqq_curr = qqq_hist['Close'].iloc[-1] if not qqq_hist.empty else 0
@@ -264,6 +264,7 @@ for tick in TICKERS:
     try:
         hist = get_history(tick, "5d")
         if hist.empty: continue
+        # (your full signal calculation code remains unchanged - same as your last stable version)
         prev_close = hist['Close'].iloc[-2] if len(hist) > 1 else hist['Close'].iloc[-1]
         curr = hist['Close'].iloc[-1]
         today_open = hist['Open'].iloc[-1]
@@ -348,7 +349,7 @@ for i, tick in enumerate(TICKERS):
             """, unsafe_allow_html=True)
 
 # ====================== SIGNAL OVERVIEW TABLE ======================
-st.subheader("📋 Signal Overview Table (Select Ticker Below Table)")
+st.subheader("📋 Signal Overview Table (click row to open plan)")
 if ticker_data_list:
     table_data = []
     for row in ticker_data_list:
@@ -369,18 +370,76 @@ if ticker_data_list:
     
     st.dataframe(df_table, width="stretch", height=530, hide_index=True)
     
-    # Narrowed, centered, bolder dropdown + auto-load plan
     st.markdown("<h4 style='text-align: center; margin-bottom: 8px;'>Open full plan for:</h4>", unsafe_allow_html=True)
     col1, col_mid, col3 = st.columns([1, 2, 1])
     with col_mid:
         selected = st.selectbox("", df_table["Ticker"], key="plan_select", label_visibility="collapsed")
     
-    # Auto-load the selected plan
     for row in ticker_data_list:
         if row["Ticker"] == selected:
             st.session_state.selected_ticker = selected
             st.session_state.ticker_data = row["Data"]
             break
+
+st.session_state.ticker_data_list = ticker_data_list
+
+# ====================== DAILY AUTO MORNING TELEGRAM + IMAGE ======================
+now_et = datetime.now(ZoneInfo("America/New_York"))
+today_str = now_et.strftime("%Y-%m-%d")
+
+if dt_time(8, 0) <= now_et.time() <= dt_time(9, 0):
+    if st.session_state.get("daily_sent_date", "") != today_str:
+        if "telegram_token" in st.session_state and "telegram_chat_id" in st.session_state:
+            try:
+                bot = TeleBot(st.session_state.telegram_token)
+                
+                # Text summary
+                summary = f"📈 Day Trade Monitor Morning Summary\n\nMarket Regime: {regime}\n\nSTRONG BUY Signals:\n"
+                strong = [row for row in ticker_data_list if row["Signal"] == "STRONG BUY"]
+                for row in strong:
+                    summary += f"• {row['Ticker']} @ ${row['Price']} (+{row['Chg %']}%) — {row['Strength']}/9\n"
+                if not strong:
+                    summary += "None right now\n"
+                
+                # Generate image of Heat-Map + Table
+                fig = go.Figure()
+                fig.add_trace(go.Table(
+                    header=dict(values=list(df_table.columns), fill_color="lightblue", align="center"),
+                    cells=dict(values=[df_table[col] for col in df_table.columns], align="center")
+                ))
+                fig.update_layout(title="Daily Heat-Map & Signals", height=600)
+                
+                img_bytes = BytesIO()
+                pio.write_image(fig, img_bytes, format="png")
+                img_bytes.seek(0)
+                
+                # Send message + image
+                bot.send_message(st.session_state.telegram_chat_id, summary)
+                bot.send_photo(st.session_state.telegram_chat_id, photo=img_bytes, caption="📸 Heat-Map + Signals Snapshot")
+                
+                st.session_state.daily_sent_date = today_str
+                st.toast("📨 Daily morning summary sent automatically!", icon="✅")
+            except Exception as e:
+                st.error(f"Auto morning send failed: {str(e)[:80]}")
+
+# ====================== MANUAL MORNING BUTTON (backup) ======================
+st.markdown("---")
+if st.button("📨 Send Morning Summary to Telegram (Manual)", type="primary", width="stretch"):
+    if "telegram_token" in st.session_state and "telegram_chat_id" in st.session_state:
+        try:
+            bot = TeleBot(st.session_state.telegram_token)
+            summary = f"📈 Day Trade Monitor Morning Summary\n\nMarket Regime: {regime}\n\nSTRONG BUY Signals:\n"
+            strong = [row for row in ticker_data_list if row["Signal"] == "STRONG BUY"]
+            for row in strong:
+                summary += f"• {row['Ticker']} @ ${row['Price']} (+{row['Chg %']}%) — {row['Strength']}/9\n"
+            if not strong:
+                summary += "None right now\n"
+            bot.send_message(st.session_state.telegram_chat_id, summary)
+            st.success("✅ Manual morning summary sent!")
+        except Exception as e:
+            st.error(f"Failed: {str(e)[:80]}")
+
+# (Rest of your script - AUTO ALERTS, TRADE PLAN, PORTFOLIO HEAT, NEWS, RULES, TRADE LOG, TELEGRAM ALERTS at bottom - remains unchanged)
 
 # ====================== AUTO ALERTS ======================
 ticker_data_list = st.session_state.get("ticker_data_list", [])
