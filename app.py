@@ -376,12 +376,12 @@ if ticker_data_list:
         })
     df_table = pd.DataFrame(table_data)
     st.dataframe(df_table, width="stretch", hide_index=True, use_container_width=True)
-    selected = st.selectbox("Open full plan for:", df_table["Ticker"])
+        selected = st.selectbox("Open full plan for:", df_table["Ticker"])
     for row in ticker_data_list:
         if row["Ticker"] == selected:
             st.session_state.selected_ticker = selected
             st.session_state.ticker_data = row["Data"]
-            st.rerun()
+            # st.rerun()   ← COMMENTED OUT TO STOP INFINITE LOOP
 
 # ====================== VERTICAL BUTTONS ======================
 cols = st.columns(7)
