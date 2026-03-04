@@ -205,7 +205,7 @@ st.markdown(f"<h3 style='text-align:center; background:#1e3a8a; color:white; pad
 # ====================== BACKTEST CALL (NOW CACHED) ======================
     # Inside the selected ticker block, replace the old backtest button section with:
 st.subheader("📊 Realistic Intraday Backtest – Last 60 Trading Days")
-    backtest_key = f"backtest_{tick}"
+backtest_key = f"backtest_{tick}"
     if st.button("🚀 Run Realistic Intraday Backtest on " + tick, type="secondary", key=f"bt_{tick}"):
         with st.spinner("Running cached backtest..."):
             results = run_intraday_backtest(tick, is_strict)
