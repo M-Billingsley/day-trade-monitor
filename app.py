@@ -394,7 +394,7 @@ def live_section():
                 st.session_state.ticker_data = row["Data"]
                 # st.rerun()   ← safely commented out
 
-    # ====================== VERTICAL BUTTONS ======================
+       # ====================== VERTICAL BUTTONS ======================
     cols = st.columns(7)
     for i, row in enumerate(ticker_data_list):
         tick = row["Ticker"]
@@ -407,8 +407,13 @@ def live_section():
                 st.session_state.ticker_data = row["Data"]
                 st.rerun()
 
+    # ←←← ADD THIS LINE HERE (saves data for alerts & sidebar)
+    st.session_state.ticker_data_list = ticker_data_list
+
 live_section()  # ← this runs the live fragment every 60 seconds
+
 # ====================== AUTO ALERTS ======================
+ticker_data_list = st.session_state.get("ticker_data_list", [])
 now_et = datetime.now(ZoneInfo("America/New_York"))
 if dt_time(9, 30) <= now_et.time() <= dt_time(12, 0):
     for row in ticker_data_list:
@@ -688,7 +693,7 @@ if st.button("📨 Send Morning Summary to Telegram", type="primary", width="str
         try:
             bot = TeleBot(st.session_state.telegram_token)
             summary = f"📈 Day Trade Monitor Morning Summary\n\nMarket Regime: {regime}\n\nSTRONG BUY Signals:\n"
-            strong = [row for row in ticker_data_list if row["Signal"] == "STRONG BUY"]
+                        strong = [row for row in st.session_state.get("ticker_data_list", []) if row["Signal"] == "STRONG BUY"]
             for row in strong:
                 summary += f"• {row['Ticker']} @ ${row['Price']} (+{row['Chg %']}%) — {row['Strength']}/9\n"
             if not strong:
