@@ -676,8 +676,56 @@ if st.button("🔵 Send Test Telegram Now"):
     except Exception as e:
         st.error(f"Test failed: {str(e)[:80]}")
 
-# ====================== DAILY AUTO MORNING TELEGRAM (text-only) ======================
-auto_morning = st.checkbox("✅ Receive daily morning summary automatically (8-9 AM ET)", value=True, key="auto_morning")
+import matplotlib.pyplot as plt
+from io import BytesIO
+
+# ====================== PRETTIER IMAGE GENERATOR (no Chrome needed) ======================
+def create_signals_image(df_table, regime):
+    fig, ax = plt.subplots(figsize=(11, len(df_table)*0.65 + 2))
+    ax.axis('off')
+    
+    # Create beautiful table
+    table = ax.table(cellText=df_table.values,
+                     colLabels=df_table.columns,
+                     cellLoc='center',
+                     loc='center',
+                     bbox=[0, 0, 1, 1])
+    table.auto_set_font_size(False)
+    table.set_fontsize(11)
+    table.scale(1.4, 2.4)
+    
+    # Style header (dark blue)
+    for j in range(len(df_table.columns)):
+        table[(0, j)].set_facecolor('#1e3a8a')
+        table[(0, j)].set_text_props(weight='bold', color='white')
+    
+    # Color rows based on Signal
+    for i in range(len(df_table)):
+        signal = df_table.iloc[i, 0]
+        if "STRONG BUY" in signal:
+            color = '#15803d'  # green
+        elif "BUY" in signal:
+            color = '#16a34a'
+        elif "SIT" in signal:
+            color = '#ca8a04'
+        else:
+            color = '#b91c1c'  # red
+        for j in range(len(df_table.columns)):
+            table[(i+1, j)].set_facecolor(color)
+            table[(i+1, j)].set_text_props(color='white')
+    
+    plt.title("📈 Day Trade Monitor — Live Signals Snapshot", fontsize=18, pad=30, color='#1e3a8a')
+    plt.suptitle(f"{regime}\n{datetime.now(ZoneInfo('America/New_York')).strftime('%A, %B %d %Y — %H:%M ET')}", 
+                 fontsize=12, y=0.98)
+    
+    img_bytes = BytesIO()
+    plt.savefig(img_bytes, format='png', bbox_inches='tight', dpi=220, facecolor='white')
+    img_bytes.seek(0)
+    plt.close(fig)
+    return img_bytes
+
+# ====================== DAILY AUTO MORNING TELEGRAM + PRETTIER IMAGE ======================
+auto_morning = st.checkbox("✅ Receive daily morning summary automatically (8-9 AM ET with image)", value=True, key="auto_morning")
 
 now_et = datetime.now(ZoneInfo("America/New_York"))
 today_str = now_et.strftime("%Y-%m-%d")
@@ -693,14 +741,19 @@ if auto_morning and dt_time(8, 0) <= now_et.time() <= dt_time(9, 0):
                     summary += f"• {row['Ticker']} @ ${row['Price']} (+{row['Chg %']}%) — {row['Strength']}/9\n"
                 if not strong:
                     summary += "None right now\n"
+                
+                img_bytes = create_signals_image(df_table, regime)
+                
                 bot.send_message(st.session_state.telegram_chat_id, summary)
+                bot.send_photo(st.session_state.telegram_chat_id, photo=img_bytes, caption="📸 Daily Signals Snapshot")
+                
                 st.session_state.daily_sent_date = today_str
-                st.toast("📨 Daily morning summary sent automatically!", icon="✅")
+                st.toast("📨 Daily morning summary + beautiful image sent!", icon="✅")
             except Exception as e:
-                st.error(f"Auto morning send failed: {str(e)[:80]}")
+                st.error(f"Auto send failed: {str(e)[:80]}")
 
-# ====================== MANUAL MORNING SUMMARY BUTTON (text-only) ======================
-if st.button("📨 Send Morning Summary to Telegram (Manual)", type="primary", width="stretch"):
+# ====================== MANUAL MORNING SUMMARY BUTTON (with prettier image) ======================
+if st.button("📨 Send Morning Summary to Telegram (Manual with Image)", type="primary", width="stretch"):
     if "telegram_token" in st.session_state and "telegram_chat_id" in st.session_state:
         try:
             bot = TeleBot(st.session_state.telegram_token)
@@ -710,8 +763,12 @@ if st.button("📨 Send Morning Summary to Telegram (Manual)", type="primary", w
                 summary += f"• {row['Ticker']} @ ${row['Price']} (+{row['Chg %']}%) — {row['Strength']}/9\n"
             if not strong:
                 summary += "None right now\n"
+            
+            img_bytes = create_signals_image(df_table, regime)
+            
             bot.send_message(st.session_state.telegram_chat_id, summary)
-            st.success("✅ Manual summary sent!")
+            bot.send_photo(st.session_state.telegram_chat_id, photo=img_bytes, caption="📸 Daily Signals Snapshot")
+            st.success("✅ Manual summary + beautiful image sent!")
         except Exception as e:
             st.error(f"Failed: {str(e)[:80]}")
 
