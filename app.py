@@ -697,23 +697,16 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
             st.caption(f"Limit range: ${buy_low:,.2f} – ${buy_high:,.2f}")
 
             # === CLEAN TAKE-PROFIT TARGETS ===
-            st.markdown("**2. Take-Profit Targets (GTC)**")
+                       st.markdown("**2. Take-Profit Targets (GTC)**")
             half_shares = shares // 2
             remaining = shares - half_shares
 
             for pct in [3.0, 5.0]:
                 sell_p = round(suggested_buy * (1 + pct / 100), 2)
                 profit_half = round((sell_p - suggested_buy) * half_shares)
-                st.markdown(
-                    f"• Sell <b>{half_shares:,} shares</b> (50%) at <b>${sell_p:,.2f}</b> "
-                    f"(+{int(pct)}%) → <b>${profit_half:,.0f}</b> profit",
-                    unsafe_allow_html=True
-                )
+                st.write(f"• Sell **{half_shares:,} shares** (50%) at **${sell_p:,.2f}** (+{int(pct)}%) → **${profit_half:,.0f}** profit")
 
-            st.markdown(
-                f"• Trail the remaining <b>{remaining:,} shares</b> using breakeven + trailing stop",
-                unsafe_allow_html=True
-            )
+            st.write(f"• Trail the remaining **{remaining:,} shares** using breakeven + trailing stop")
 
             # === STOP & TRAILING ===
             st.markdown("**3. Protective Stop**")
