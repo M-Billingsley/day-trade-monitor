@@ -6,3 +6,4 @@ twilio
 pyTelegramBotAPI
 numpy
 matplotlib
+openai
