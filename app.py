@@ -1009,17 +1009,19 @@ def create_signals_image(df_table, regime):
         table[(0, j)].set_facecolor('#1e3a8a')
         table[(0, j)].set_text_props(weight='bold', color='white')
     
-    # Color rows based on Signal
+    # Color rows based on Signal (supports Caution Buy)
     for i in range(len(df_table)):
-        signal = df_table.iloc[i, 0]
-        if "Strong Buy" in signal or "STRONG BUY" in signal:
-            color = '#15803d'
+        signal = str(df_table.iloc[i, 0])
+        if "Strong Buy" in signal:
+            color = '#15803d'      # dark green
+        elif "Caution Buy" in signal:
+            color = '#f59e0b'      # orange — clear “caution” signal
         elif "Buy" in signal:
-            color = '#16a34a'
+            color = '#16a34a'      # green
         elif "Watch" in signal:
             color = '#f59e0b'
-        else:
-            color = '#b91c1c'
+        else:  # Sit Out
+            color = '#b91c1c'      # red
         for j in range(len(df_table.columns)):
             table[(i+1, j)].set_facecolor(color)
             table[(i+1, j)].set_text_props(color='white')
