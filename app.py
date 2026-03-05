@@ -243,7 +243,8 @@ else:
 st.markdown(f"""
 <h3 style='text-align:center; background:#1e3a8a; color:white; padding:14px; border-radius:12px; margin-bottom:12px;'>
     {regime} (QQQ {qqq_chg_from_open:+.1f}%)<br>
-    <span style='font-size:1.1em;'>VIX {vix} — {vix_status}</span>
+    <span style='font-size:1.1em;'>VIX {vix} — {vix_status}</span><br>
+    <span style='font-size:0.95em; opacity:0.9;'>Last Updated: {now_et.strftime('%H:%M:%S ET')}</span>
 </h3>
 """, unsafe_allow_html=True)
 
@@ -464,7 +465,7 @@ grok_key = f"grok_briefing_{today_str}"
 ticker_list = st.session_state.get("ticker_data_list", [])
 strong_summary = "\n".join([
     f"• {row['Ticker']} @ ${row['Price']} ({row['Chg %']}%) — {row['Strength']}/9"
-    for row in ticker_list if "STRONG BUY" in row.get("Signal", "")
+    for row in ticker_list if row.get("Signal") in ["Strong Buy", "STRONG BUY"]
 ]) or "None detected yet"
 
 current_regime = regime if 'regime' in locals() else "Neutral Day"
@@ -498,7 +499,7 @@ if st.button("🔄 Generate Grok Briefing Now", type="primary", use_container_wi
 # ====================== LIVE HEAT-MAP ======================
 st.subheader(f"📈 Live Heat-Map – {len(st.session_state.dynamic_tickers)} Tickers")
 heat_cols = st.columns(7)
-for i, tick in enumerate(TICKERS):
+for i, tick in enumerate(st.session_state.dynamic_tickers):
     try:
         data = get_history(tick, "2d")
         price = data['Close'].iloc[-1]
@@ -679,9 +680,29 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
 
         with st.container(border=True):
             st.subheader("Execution Instructions – BUY LONG")
-            # ... (keep all your existing buy_low, shares, targets, stop, trailing code exactly as-is)
-            # (I didn't change any of that — just kept it)
-
+            buy_low = round(data.get("curr", 0) * 0.97, 2)
+            buy_high = round(data.get("curr", 0) * 0.985, 2)
+            suggested_buy = round((buy_low + buy_high) / 2, 2)
+            risk_per_share = round(suggested_buy * 0.02, 2)
+            shares = int(dynamic_risk_dollars / risk_per_share)
+            shares = max(25, round(shares / 25) * 25)
+            total_cost = round(shares * suggested_buy, 2)
+            st.markdown(f"**Buy Order:** - **{shares:,} shares** at **${suggested_buy:,.2f}**")
+            st.markdown(f"- **Total Cost:** **${total_cost:,.2f}**")
+            st.caption(f"Limit range: ${buy_low:,.2f} – ${buy_high:,.2f}")
+            st.markdown("**2. Take-Profit Targets (GTC)**")
+            for pct in [3.0, 5.0]:
+                sell_p = round(suggested_buy * (1 + pct / 100), 2)
+                profit = round((sell_p - suggested_buy) * shares)
+                st.write(f"• Sell at ${sell_p:,.2f} (+{int(pct)}%) → ${profit:,.0f} profit")
+            st.markdown("**3. Protective Stop**")
+            stop = round(suggested_buy * 0.98, 2)
+            st.markdown(f"Stop-Loss at **${stop:,.2f}**")
+            st.caption(f"Max risk this trade ≈ **${dynamic_risk_dollars:,.0f}** ({risk_pct:.1f}%)")
+            st.markdown("**4. Smart Trailing Stop Suggestion**")
+            trail_pct = 1.0 if "Strong Buy" in data.get("label", "") else 0.5
+            breakeven_trail = round(suggested_buy * (1 + trail_pct / 100), 2)
+            st.write(f"• Once +3% target is hit, move stop to **${breakeven_trail:,.2f}**")
             st.info(f"**Dynamic Risk Sizing Justification**\n\n{justification}")
 
         # Chart stays the same
@@ -914,14 +935,14 @@ def create_signals_image(df_table, regime):
     # Color rows based on Signal
     for i in range(len(df_table)):
         signal = df_table.iloc[i, 0]
-        if "STRONG BUY" in signal:
-            color = '#15803d'  # green
-        elif "BUY" in signal:
+        if "Strong Buy" in signal or "STRONG BUY" in signal:
+            color = '#15803d'
+        elif "Buy" in signal:
             color = '#16a34a'
-        elif "SIT" in signal:
-            color = '#ca8a04'
+        elif "Watch" in signal:
+            color = '#f59e0b'
         else:
-            color = '#b91c1c'  # red
+            color = '#b91c1c'
         for j in range(len(df_table.columns)):
             table[(i+1, j)].set_facecolor(color)
             table[(i+1, j)].set_text_props(color='white')
