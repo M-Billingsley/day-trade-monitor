@@ -476,7 +476,7 @@ grok_key = f"grok_briefing_{today_str}"
 ticker_list = st.session_state.get("ticker_data_list", [])
 strong_summary = "\n".join([
     f"• {row['Ticker']} @ ${row['Price']} ({row['Chg %']}%) — {row['Strength']}/9"
-    for row in ticker_list if row.get("Signal") in ["Strong Buy", "STRONG BUY"]
+    for row in ticker_list if "Strong Buy" in row.get("Signal", "")
 ]) or "None detected yet"
 
 current_regime = regime if 'regime' in locals() else "Neutral Day"
@@ -576,6 +576,10 @@ if ticker_data_list:
     styled_table = df_table.style.apply(color_row, axis=1)
     
     st.dataframe(styled_table, width="stretch", height=530, hide_index=True)
+
+    # Save for safe Telegram image generation (prevents crashes)
+    st.session_state.df_table = df_table.copy()
+    st.session_state.regime = regime
 
     # Narrowed, centered, bolder dropdown + auto-load plan
     st.markdown("<h4 style='text-align: center; margin-bottom: 8px;'>Open full plan for:</h4>", unsafe_allow_html=True)
@@ -685,8 +689,17 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
     st.subheader("📏 Advanced Position Sizer")
     dynamic_risk = 2.0 if "Strong Buy" in data.get("label", "") else 1.0
     use_dynamic = st.checkbox("Use dynamic risk based on signal strength", value=True)
-    risk_pct = st.number_input("Risk per Trade % (override)", value=dynamic_risk, step=0.1, format="%.1f") if not use_dynamic else dynamic_risk
-    st.caption(f"**Current risk used:** {risk_pct}%")
+    
+    if use_dynamic:
+        risk_pct = dynamic_risk
+    else:
+        risk_pct = st.number_input("Risk per Trade % (override)", value=dynamic_risk, step=0.1, format="%.1f")
+    
+    # Clean float calculation used everywhere below
+    risk_pct_float = float(str(risk_pct).strip("%")) / 100
+    dynamic_risk_dollars = account_size * risk_pct_float
+    
+    st.caption(f"**Current risk used:** {risk_pct:.1f}% → **${dynamic_risk_dollars:,.0f}** max loss this trade")
 
     # Sacred gate protection
     sacred_1_fail = not data.get("bull", False)
@@ -712,8 +725,8 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
         with st.container(border=True):
             st.subheader("Execution Instructions – BUY LONG")
 
-            # Use the ACTUAL risk % the user chose (fixes huge profit numbers)
-            dynamic_risk_dollars = account_size * risk_pct / 100
+            # Use the clean calculation from above
+            dynamic_risk_dollars = dynamic_risk_dollars  # already correct
 
             buy_low = round(data.get("curr", 0) * 0.97, 2)
             buy_high = round(data.get("curr", 0) * 0.985, 2)
@@ -1144,8 +1157,12 @@ if auto_morning and dt_time(8, 0) <= now_et.time() <= dt_time(9, 0):
             try:
                 bot = TeleBot(st.session_state.telegram_token)
                 
-                summary = f"📈 Day Trade Monitor Morning Summary\n\nMarket Regime: {regime}\n\nStrong Buy Signals:\n"
-                strong = [row for row in st.session_state.get("ticker_data_list", []) if row["Signal"] == "Strong Buy"]
+                # Safe fallbacks (prevents crashes if no signals or table not created)
+                df_table_safe = st.session_state.get("df_table", pd.DataFrame([["No signals yet", "", "", "", "", "", "", "", ""]]))
+                regime_safe = st.session_state.get("regime", "Neutral Day")
+                
+                summary = f"📈 Day Trade Monitor Morning Summary\n\nMarket Regime: {regime_safe}\n\nStrong Buy Signals:\n"
+                strong = [row for row in st.session_state.get("ticker_data_list", []) if "Strong Buy" in row["Signal"]]
                 for row in strong:
                     summary += f"• {row['Ticker']} @ ${row['Price']} (+{row['Chg %']}%) — {row['Strength']}/9\n"
                 if not strong:
@@ -1155,7 +1172,7 @@ if auto_morning and dt_time(8, 0) <= now_et.time() <= dt_time(9, 0):
                 if grok_key in st.session_state:
                     summary += f"\n\n🧠 GROK PRE-MARKET BRIEFING:\n{st.session_state[grok_key]}"
                 
-                img_bytes = create_signals_image(df_table, regime)
+                img_bytes = create_signals_image(df_table_safe, regime_safe)
                 
                 bot.send_message(st.session_state.telegram_chat_id, summary)
                 bot.send_photo(st.session_state.telegram_chat_id, photo=img_bytes, caption="📸 Daily Signals Snapshot")
@@ -1171,25 +1188,28 @@ if st.button("📨 Send Morning Summary to Telegram (Manual with Image + Grok)",
         try:
             bot = TeleBot(st.session_state.telegram_token)
             
-            summary = f"📈 Day Trade Monitor Morning Summary\n\nMarket Regime: {regime}\n\nStrong Buy Signals:\n"
+            # Safe fallbacks
+            df_table_safe = st.session_state.get("df_table", pd.DataFrame([["No signals yet", "", "", "", "", "", "", "", ""]]))
+            regime_safe = st.session_state.get("regime", "Neutral Day")
+            
+            summary = f"📈 Day Trade Monitor Morning Summary\n\nMarket Regime: {regime_safe}\n\nStrong Buy Signals:\n"
             strong = [row for row in st.session_state.get("ticker_data_list", []) if "Strong Buy" in row["Signal"]]
             for row in strong:
                 summary += f"• {row['Ticker']} @ ${row['Price']} (+{row['Chg %']}%) — {row['Strength']}/9\n"
             if not strong:
                 summary += "None right now\n"
             
-            # Append Grok briefing if it exists
             grok_key = f"grok_briefing_{today_str}"
             if grok_key in st.session_state:
                 summary += f"\n\n🧠 GROK PRE-MARKET BRIEFING:\n{st.session_state[grok_key]}"
             
-            img_bytes = create_signals_image(df_table, regime)
+            img_bytes = create_signals_image(df_table_safe, regime_safe)
             
             bot.send_message(st.session_state.telegram_chat_id, summary)
             bot.send_photo(st.session_state.telegram_chat_id, photo=img_bytes, caption="📸 Daily Signals Snapshot")
             st.success("✅ Manual summary + Grok briefing + image sent!")
         except Exception as e:
-            st.error(f"Failed: {str(e)[:80]}")
+            st.error(f"Failed: {str(e)[:100]}")
 
 # ====================== SAFE 60-SECOND REFRESH ======================
 if 'last_refresh' not in st.session_state:
