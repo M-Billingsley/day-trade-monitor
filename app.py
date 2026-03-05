@@ -132,6 +132,43 @@ def get_intraday_history(ticker: str, period: str = "5d", interval: str = "15m")
     except:
         return pd.DataFrame()
 
+@st.cache_data(ttl=1800, show_spinner=False)
+def get_grok_premarket_briefing(regime: str, qqq_chg: float, vix: float, top_signals: str):
+    try:
+        client = OpenAI(
+            api_key=st.secrets["xai"]["api_key"],
+            base_url="https://api.x.ai/v1"
+        )
+        prompt = f"""You are an elite day-trading analyst specializing in leveraged ETFs (SOXL, TQQQ, TECL, FNGU, NVDL, etc.).
+
+Date: {datetime.now(ZoneInfo("America/New_York")).strftime('%A, %B %d, %Y')}
+Current Regime: {regime}
+QQQ from open: {qqq_chg:+.2f}%
+VIX: {vix}
+
+Current strong signals:
+{top_signals or "None yet"}
+
+Task: Give me a concise, actionable premarket briefing focused ONLY on what matters for today’s day trades:
+1. Overnight news & events (earnings, data, geopolitics, sector moves)
+2. Premarket futures & gaps (NQ/ES + key names)
+3. Sector rotation (semis vs broad tech)
+4. Key technical levels & bias for SOXL, TQQQ, TECL, NVDL
+5. Overall trading bias & aggression level (Aggressive Long / Selective / Caution / Avoid)
+6. Any red flags or specific risks for leveraged trading today
+
+Be direct, no fluff. End exactly with: "**Recommended Approach:** ..." """
+
+        response = client.chat.completions.create(
+            model="grok-4-1-fast",          # fastest & cheapest high-quality model
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=900,
+            temperature=0.7
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        return f"⚠️ Grok unavailable right now: {str(e)[:120]}"
+
 # ====================== CONFIG ======================
 DEFAULT_ACCOUNT_SIZE = 30000
 CSV_FILE = "trade_log.csv"
@@ -204,6 +241,43 @@ st.markdown(f"""
     <span style='font-size:1.1em;'>VIX {vix} — {vix_status}</span>
 </h3>
 """, unsafe_allow_html=True)
+
+# ====================== GROK PRE-MARKET INTELLIGENCE (AUTO) ======================
+st.subheader("🧠 Grok Pre-Market Intelligence")
+st.caption("Auto-generates 7:30–9:30 ET • Powered by real Grok-4")
+
+today_str = now_et.strftime("%Y-%m-%d")
+grok_key = f"grok_briefing_{today_str}"
+
+# Build quick signal summary for Grok
+strong_summary = "\n".join([
+    f"• {row['Ticker']} @ ${row['Price']} ({row['Chg %']}%) — {row['Strength']}/9"
+    for row in ticker_data_list if "STRONG BUY" in row["Signal"]
+]) or "None detected yet"
+
+# Auto-run in morning window
+if dt_time(7, 30) <= now_et.time() <= dt_time(9, 30):
+    if grok_key not in st.session_state:
+        with st.spinner("Grok analyzing overnight news + futures..."):
+            briefing = get_grok_premarket_briefing(regime, qqq_chg_from_open, vix, strong_summary)
+            st.session_state[grok_key] = briefing
+
+# Display
+if grok_key in st.session_state:
+    with st.expander("📋 Today's Grok Briefing (click to expand)", expanded=True):
+        st.markdown(st.session_state[grok_key])
+        if st.button("🔄 Refresh Grok Analysis", key="refresh_grok"):
+            del st.session_state[grok_key]
+            st.rerun()
+else:
+    st.info("🕒 Grok briefing will auto-generate between 7:30–9:30 ET (or click the button below)")
+
+# Manual button (works anytime)
+if st.button("🔄 Generate Grok Briefing Now", type="primary", use_container_width=True):
+    with st.spinner("Calling Grok..."):
+        briefing = get_grok_premarket_briefing(regime, qqq_chg_from_open, vix, strong_summary)
+        st.session_state[grok_key] = briefing
+        st.rerun()
 
 # ====================== BROAD MARKET INDICES ======================
 st.subheader("📊 Broad Market Indices")
