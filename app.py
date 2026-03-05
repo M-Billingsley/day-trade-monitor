@@ -788,26 +788,25 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
         ### 🎯 The Core Philosophy
         This is **not** a random indicator dashboard — it’s a **proven morning pullback system** for leveraged ETFs.  
         The 9 gates were built from years of backtesting and live trading.  
-
         **Strict adherence = 58–72% win rate** (depending on signal strength).  
         Breaking the rules = random gambling with no edge.
 
-        ### The 2 Sacred Gates — **NEVER Override These**
-        **1. Bullish Trend (EMA50 > EMA200)**  
-        Keeps you only in the long-term uptrend where leveraged ETFs actually work. Without this, volatility decay destroys you.
-
-        **4. Healthy Pullback from Open (<4.5% Balanced / <3% Strict)**  
-        This is what makes you a disciplined buyer, not a chaser. It directly controls your average loss size (~1.8%).
-
-        ### Smart Signal Levels (Updated Rule)
-        - **Strong Buy** = 9/9 gates  
-        - **Buy** = 8/9 gates **or** 7/9 gates **if both sacred gates passed** (smart borderline setups)  
+        ### Smart Signal Levels (Current Rules)
+        - **Strong Buy** = 9/9 gates → Full conviction  
+        - **Caution Buy** = 8/9 gates **or** 7/9 gates **if both sacred gates passed** → High-quality borderline setup (trade with extra discipline)  
         - **Watch** = 7/9 gates when a sacred gate failed  
         - **Sit Out** = Everything else
 
+        ### The 2 Sacred Gates — **NEVER Override These**
+        **1. Bullish Trend (EMA50 > EMA200)**  
+        Keeps you only in the long-term uptrend where leveraged ETFs actually work. Without this, volatility decay destroys you. This gate alone boosts win rate ~15–20%.
+
+        **4. Healthy Pullback from Open (<4.5% Balanced / <3% Strict)**  
+        This is what makes you a disciplined buyer, not a chaser. It directly controls your average loss size (~1.8%). Never buy strength — wait for the dip.
+
         ### The Discipline Edge
-        Backtests show **Strong Buy** signals average 65–72% win rate.  
-        **Buy** signals average 58–65% when you respect the rules.  
+        Backtests show **Strong Buy** averages 65–72% win rate.  
+        **Caution Buy** averages 58–65% when you respect the rules.  
         Every time you override a sacred gate, your real-world results drop toward 45–50%.  
 
         **Rule #1 of this app:** The gates decide. Emotion does not.  
