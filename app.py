@@ -187,6 +187,10 @@ else:
 if not os.path.exists(JOURNAL_FILE):
     pd.DataFrame(columns=["Date", "Signal", "Ticker", "Strength", "Price", "Chg%"]).to_csv(JOURNAL_FILE, index=False)
 
+# ====================== DYNAMIC TICKERS (fixes custom ticker bug) ======================
+if 'dynamic_tickers' not in st.session_state:
+    st.session_state.dynamic_tickers = ["SOXL", "TQQQ", "TECL", "FNGU", "NVDL", "TSLL", "SPXL", "QLD", "UPRO"]
+
 # ====================== SECRETS ======================
 try:
     secrets = st.secrets
@@ -330,24 +334,30 @@ qqq_chg_from_open = (qqq_curr - qqq_open) / qqq_open * 100 if qqq_open != 0 else
 
 # ====================== MANUAL TICKER INPUT ======================
 st.subheader("🔍 Add Custom Ticker (any symbol)")
-col_m1, col_m2 = st.columns([3, 1])
+col_m1, col_m2, col_m3 = st.columns([3, 1.2, 1])
 with col_m1:
     custom_ticker = st.text_input("Enter ticker (e.g. SMCI, ARM, COIN)", placeholder="SMCI", key="custom_ticker_input").upper().strip()
+
 with col_m2:
-    if st.button("➕ Add to Today's Watchlist", type="primary", use_container_width=True) and custom_ticker:
-        if custom_ticker not in TICKERS:
-            TICKERS.append(custom_ticker)
+    if st.button("➕ Add to Watchlist", type="primary", use_container_width=True) and custom_ticker:
+        if custom_ticker not in st.session_state.dynamic_tickers:
+            st.session_state.dynamic_tickers.append(custom_ticker)
             st.success(f"✅ {custom_ticker} added for today!")
             st.rerun()
         else:
             st.info(f"{custom_ticker} already in list")
 
+with col_m3:
+    if st.button("🗑️ Reset to Core 9", use_container_width=True):
+        st.session_state.dynamic_tickers = ["SOXL", "TQQQ", "TECL", "FNGU", "NVDL", "TSLL", "SPXL", "QLD", "UPRO"]
+        st.success("✅ Custom tickers cleared!")
+        st.rerun()
 
 # ====================== SIGNALS + HEAT-MAP ======================
 st.subheader("🚀 Trade Signals")
 ticker_data_list = []
 
-for tick in TICKERS:
+for tick in st.session_state.dynamic_tickers:
     try:
         hist = get_intraday_history(tick)
         if hist.empty or len(hist) < 50: continue
@@ -486,7 +496,7 @@ if st.button("🔄 Generate Grok Briefing Now", type="primary", use_container_wi
         st.rerun()
         
 # ====================== LIVE HEAT-MAP ======================
-st.subheader("📈 Live Heat-Map – All 14 Tickers")
+st.subheader(f"📈 Live Heat-Map – {len(st.session_state.dynamic_tickers)} Tickers")
 heat_cols = st.columns(7)
 for i, tick in enumerate(TICKERS):
     try:
