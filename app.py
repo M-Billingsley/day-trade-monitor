@@ -121,6 +121,16 @@ def run_intraday_backtest(tick: str, is_strict: bool):
     except:
         return None
 
+@st.cache_data(ttl=60, show_spinner=False)
+def get_intraday_history(ticker: str, period: str = "5d", interval: str = "15m"):
+    try:
+        df = yf.Ticker(ticker).history(period=period, interval=interval)
+        if not df.empty:
+            df.index = df.index.tz_convert("America/New_York")
+        return df
+    except:
+        return pd.DataFrame()
+
 # ====================== CONFIG ======================
 DEFAULT_ACCOUNT_SIZE = 30000
 CSV_FILE = "trade_log.csv"
@@ -157,15 +167,42 @@ now_et = datetime.now(ZoneInfo("America/New_York"))
 market_status = "🟢 MARKET OPEN" if dt_time(9, 30) <= now_et.time() <= dt_time(16, 0) else "🔴 MARKET CLOSED"
 st.markdown(f"<h4 style='text-align:center; background:#1e3a8a; color:white; padding:8px; border-radius:12px;'>{market_status} — {now_et.strftime('%H:%M ET')}</h4>", unsafe_allow_html=True)
 
-qqq_today = get_history("QQQ", "2d")
-qqq_chg = (qqq_today['Close'].iloc[-1] - qqq_today['Close'].iloc[-2]) / qqq_today['Close'].iloc[-2] * 100 if len(qqq_today) > 1 else 0
-if qqq_chg > 0.8:
+# Intra-day QQQ + VIX for accurate regime
+qqq_hist = get_intraday_history("QQQ")
+if not qqq_hist.empty:
+    today = qqq_hist.index[-1].normalize()
+    today_data = qqq_hist[qqq_hist.index.normalize() == today]
+    qqq_open = today_data['Open'].iloc[0] if not today_data.empty else qqq_hist['Open'].iloc[-1]
+    qqq_curr = qqq_hist['Close'].iloc[-1]
+    qqq_chg_from_open = (qqq_curr - qqq_open) / qqq_open * 100 if qqq_open != 0 else 0
+else:
+    qqq_chg_from_open = 0
+
+vix_hist = get_history("^VIX", "2d")
+vix = round(vix_hist['Close'].iloc[-1], 1) if len(vix_hist) > 0 else 0
+
+if qqq_chg_from_open > 0.8:
     regime = "🟢 Bullish Day – Trade Aggressively"
-elif qqq_chg > -0.8:
+elif qqq_chg_from_open > -0.8:
     regime = "🟡 Neutral Day – Stick to Strong Buys"
 else:
     regime = "🔴 Choppy/Bearish Day – Caution Advised"
-st.markdown(f"<h3 style='text-align:center; background:#1e3a8a; color:white; padding:14px; border-radius:12px; margin-bottom:12px;'>{regime} (QQQ {qqq_chg:+.1f}%)</h3>", unsafe_allow_html=True)
+
+if vix > 35:
+    vix_status = "🔴 EXTREME VOL – Avoid or ultra tight stops"
+elif vix > 25:
+    vix_status = "🟠 High Vol – Caution, smaller size"
+elif vix > 18:
+    vix_status = "🟡 Normal Vol"
+else:
+    vix_status = "🟢 Low Vol – Aggressive OK"
+
+st.markdown(f"""
+<h3 style='text-align:center; background:#1e3a8a; color:white; padding:14px; border-radius:12px; margin-bottom:12px;'>
+    {regime} (QQQ {qqq_chg_from_open:+.1f}%)<br>
+    <span style='font-size:1.1em;'>VIX {vix} — {vix_status}</span>
+</h3>
+""", unsafe_allow_html=True)
 
 # ====================== BROAD MARKET INDICES ======================
 st.subheader("📊 Broad Market Indices")
@@ -255,22 +292,26 @@ qqq_chg_from_open = (qqq_curr - qqq_open) / qqq_open * 100 if qqq_open != 0 else
 # ====================== SIGNALS + HEAT-MAP ======================
 st.subheader("🚀 Trade Signals")
 ticker_data_list = []
-qqq_hist = get_history("QQQ", "5d")
-qqq_open = qqq_hist['Open'].iloc[-1] if not qqq_hist.empty else 0
-qqq_curr = qqq_hist['Close'].iloc[-1] if not qqq_hist.empty else 0
-qqq_chg_from_open = (qqq_curr - qqq_open) / qqq_open * 100 if qqq_open != 0 else 0
 
 for tick in TICKERS:
     try:
-        hist = get_history(tick, "5d")
-        if hist.empty: continue
-        prev_close = hist['Close'].iloc[-2] if len(hist) > 1 else hist['Close'].iloc[-1]
+        hist = get_intraday_history(tick)
+        if hist.empty or len(hist) < 50: continue
+
         curr = hist['Close'].iloc[-1]
-        today_open = hist['Open'].iloc[-1]
-        chg_from_open = (curr - today_open) / today_open * 100
+        prev_close = hist['Close'].iloc[-2] if len(hist) > 1 else curr
+
+        # Correct today's open (first 9:30 bar of the day)
+        today = hist.index[-1].normalize()
+        today_data = hist[hist.index.normalize() == today]
+        today_open = today_data['Open'].iloc[0] if not today_data.empty else curr
+        chg_from_open = (curr - today_open) / today_open * 100 if today_open != 0 else 0
+
         prev_vol = hist['Volume'].iloc[-2] if len(hist) > 1 else 0
         curr_vol = hist['Volume'].iloc[-1]
         vol_ok = curr_vol > prev_vol * (1.5 if not is_strict else 1.8)
+
+        # All indicators now on clean 15m bars (same as backtest)
         delta = hist['Close'].diff()
         gain = delta.where(delta > 0, 0).rolling(14).mean()
         loss = -delta.where(delta < 0, 0).rolling(14).mean().abs()
@@ -278,13 +319,17 @@ for tick in TICKERS:
         rs = gain / loss_safe
         rsi = max(0, min(100, 100 - (100 / (1 + rs)).iloc[-1]))
         rsi_ok = rsi < (78 if not is_strict else 75)
+
         ema50 = hist['Close'].ewm(span=50, adjust=False).mean().iloc[-1]
         ema200 = hist['Close'].ewm(span=200, adjust=False).mean().iloc[-1]
         bull = ema50 > ema200
+
         ema9 = hist['Close'].ewm(span=9, adjust=False).mean().iloc[-1]
         near_9ema = abs(curr - ema9) / ema9 < (0.02 if not is_strict else 0.015)
+
         now_et_time = datetime.now(ZoneInfo("America/New_York")).time()
         time_ok = dt_time(9, 30) <= now_et_time <= dt_time(12, 0) if not is_strict else dt_time(9, 45) <= now_et_time <= dt_time(11, 30)
+
         ema12 = hist['Close'].ewm(span=12, adjust=False).mean()
         ema26 = hist['Close'].ewm(span=26, adjust=False).mean()
         macd_line = ema12 - ema26
@@ -294,35 +339,28 @@ for tick in TICKERS:
         hist_positive = macd_hist.iloc[-1] > 0
         hist_rising = macd_hist.iloc[-1] > macd_hist.iloc[-2] if len(macd_hist) > 1 else False
         histogram_ok = hist_positive and (hist_rising if is_strict else True)
+
         rel_strength_ok = chg_from_open > qqq_chg_from_open - 0.5
+
         conditions_met = sum([bull, vol_ok, rsi_ok, chg_from_open < (4.5 if not is_strict else 3),
                               near_9ema, time_ok, macd_bullish, histogram_ok, rel_strength_ok])
 
-        if conditions_met >= 8:
+        if conditions_met >= 9:
             label = "STRONG BUY"
         elif conditions_met >= 7 and time_ok:
             label = "BUY"
-        elif conditions_met >= 6:          # ← new tier
-            label = "WATCH"
         elif chg_from_open > 6 or rsi > 82:
             label = "SIT"
         else:
             label = "SHORT"
+
         ticker_data_list.append({
             "Ticker": tick,
             "Price": round(curr, 2),
             "Chg %": round(chg_from_open, 1),
             "Strength": conditions_met,
             "Signal": label,
-            "Data": {
-                "curr": curr, "prev": prev_close, "chg_from_open": chg_from_open,
-                "rsi": rsi, "bull": bull, "vol_ok": vol_ok, "near_9ema": near_9ema,
-                "time_ok": time_ok, "macd_bullish": macd_bullish, "histogram_ok": histogram_ok,
-                "rel_strength_ok": rel_strength_ok, "label": label, "strength": conditions_met,
-                "ema9": ema9, "vol_ratio": curr_vol / prev_vol if prev_vol > 0 else 1.0,
-                "macd_line": macd_line.iloc[-1], "macd_hist": macd_hist.iloc[-1],
-                "dist_9ema_pct": abs(curr - ema9) / ema9 * 100 if ema9 != 0 else 0
-            }
+            "Data": { ... }  # keep your existing Data dict exactly as before
         })
     except:
         pass
