@@ -605,7 +605,7 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
     override = st.checkbox("**Override fail Windows** (show BUY plan anyway)", value=False, key="time_override")
     st.success(f"🚀 **{data.get('label', 'UNKNOWN')} – {tick}**")
 
-       st.subheader("🔍 9 Trade Gates – Pass/Fail")
+    st.subheader("🔍 9 Trade Gates – Pass/Fail")
 
     # New override for the most common "close" gate
     override_9ema = st.checkbox("Override 9-EMA distance (allow up to 2.5% away)", value=False, key="override_9ema")
