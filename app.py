@@ -324,6 +324,29 @@ for tick in TICKERS:
     except:
         pass
 
+# ====================== LIVE HEAT-MAP ======================
+st.subheader("📈 Live Heat-Map – All 14 Tickers")
+heat_cols = st.columns(7)
+for i, tick in enumerate(TICKERS):
+    try:
+        data = get_history(tick, "2d")
+        price = data['Close'].iloc[-1]
+        chg = (price - data['Close'].iloc[-2]) / data['Close'].iloc[-2] * 100
+        color = "#15803d" if chg > 0 else "#b91c1c"
+        with heat_cols[i % 7]:
+            st.markdown(f"""
+            <div style="background:{color}; color:white; padding:10px; border-radius:10px; text-align:center; margin-bottom:8px;">
+                <b>{tick}</b><br>${price:,.2f}<br><span style="font-size:1.1em;">{chg:+.1f}%</span>
+            </div>
+            """, unsafe_allow_html=True)
+    except:
+        with heat_cols[i % 7]:
+            st.markdown(f"""
+            <div style="background:#374151; color:white; padding:10px; border-radius:10px; text-align:center; margin-bottom:8px;">
+                <b>{tick}</b><br>—<br>—
+            </div>
+            """, unsafe_allow_html=True)
+
 # ====================== SIGNAL OVERVIEW TABLE ======================
 st.subheader("📋 Signal Overview Table (click row to open plan)")
 if ticker_data_list:
@@ -346,11 +369,13 @@ if ticker_data_list:
     
     st.dataframe(df_table, width="stretch", height=530, hide_index=True)
     
+    # Narrowed, centered, bolder dropdown + auto-load plan
     st.markdown("<h4 style='text-align: center; margin-bottom: 8px;'>Open full plan for:</h4>", unsafe_allow_html=True)
     col1, col_mid, col3 = st.columns([1, 2, 1])
     with col_mid:
         selected = st.selectbox("", df_table["Ticker"], key="plan_select", label_visibility="collapsed")
     
+    # Auto-load the selected plan
     for row in ticker_data_list:
         if row["Ticker"] == selected:
             st.session_state.selected_ticker = selected
@@ -678,7 +703,7 @@ if auto_morning and dt_time(8, 0) <= now_et.time() <= dt_time(9, 0):
                 fig.update_layout(title="Daily Heat-Map & Signals", height=600)
                 
                 img_bytes = BytesIO()
-                pio.write_image(fig, img_bytes, format="png")
+                pio.write_image(fig, img_bytes, format="png", engine="kaleido")
                 img_bytes.seek(0)
                 
                 bot.send_message(st.session_state.telegram_chat_id, summary)
@@ -711,7 +736,7 @@ if st.button("📨 Send Morning Summary to Telegram (Manual with Image)", type="
             fig.update_layout(title="Heat-Map & Signals Snapshot", height=600)
             
             img_bytes = BytesIO()
-            pio.write_image(fig, img_bytes, format="png")
+            pio.write_image(fig, img_bytes, format="png", engine="kaleido")
             img_bytes.seek(0)
             
             bot.send_message(st.session_state.telegram_chat_id, summary)
