@@ -690,7 +690,7 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
             st.markdown(f"**Buy Order:** - **{shares:,} shares** at **${suggested_buy:,.2f}**")
             st.markdown(f"- **Total Cost:** **${total_cost:,.2f}**")
             st.caption(f"Limit range: ${buy_low:,.2f} – ${buy_high:,.2f}")
-             st.markdown("**2. Take-Profit Targets (GTC)**")
+            st.markdown("**2. Take-Profit Targets (GTC)**")
             half_shares = shares // 2
             remaining = shares - half_shares
 
