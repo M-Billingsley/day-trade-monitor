@@ -602,7 +602,7 @@ st.subheader("📋 Trade Plan + Diagnostics")
 if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
     data = st.session_state.ticker_data
     tick = st.session_state.selected_ticker
-    override = st.checkbox("**Override fail Windows** (show BUY plan anyway)", value=False, key="time_override")
+    override = st.checkbox("**Override Time Window**", value=False, key="time_override")
     st.success(f"🚀 **{data.get('label', 'UNKNOWN')} – {tick}**")
 
     st.subheader("🔍 9 Trade Gates – Pass/Fail")
