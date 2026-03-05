@@ -296,7 +296,7 @@ with st.expander("🆕 New to Telegram? Full Setup Guide (3 minutes)", expanded=
     11. Paste your Bot Token and Chat ID.
     12. Click anywhere → you should see **✅ Telegram saved**.
     13. Click the blue **🔵 Send Test Telegram Now** button to test.
-    Done! You will now get instant alerts on every **STRONG BUY**.
+    Done! You will now get instant alerts on every **Strong Buy**.
     """)
     st.success("✅ Setup complete — you’re ready for alerts!")
 
@@ -586,7 +586,7 @@ if ticker_data_list:
             st.session_state.ticker_data = row["Data"]
             break
 
-# ====================== AUTO ALERTS (Only BUY + STRONG BUY) ======================
+# ====================== AUTO ALERTS (Only BUY + Strong Buy) ======================
 ticker_data_list = st.session_state.get("ticker_data_list", [])
 now_et = datetime.now(ZoneInfo("America/New_York"))
 
@@ -603,7 +603,7 @@ if dt_time(9, 30) <= now_et.time() <= dt_time(12, 0):
             
             if time.time() - last > 900:  # 15-minute debounce
                 if strength >= 9:
-                    msg = f"🚀 STRONG BUY {ticker} @ ${price} (+{chg}%) — {strength}/9 gates"
+                    msg = f"🚀 Strong Buy {ticker} @ ${price} (+{chg}%) — {strength}/9 gates"
                 else:
                     msg = f"🟢 BUY {ticker} @ ${price} (+{chg}%) — {strength}/9 gates"
                 
@@ -674,7 +674,7 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
         st.metric("9-EMA Value", f"${data.get('ema9', 0):,.2f}")
 
     st.subheader("📏 Advanced Position Sizer")
-    dynamic_risk = 2.0 if "STRONG BUY" in data.get("label", "") else 1.0
+    dynamic_risk = 2.0 if "Strong Buy" in data.get("label", "") else 1.0
     use_dynamic = st.checkbox("Use dynamic risk based on signal strength", value=True)
     risk_pct = st.number_input("Risk per Trade % (override)", value=dynamic_risk, step=0.1, format="%.1f") if not use_dynamic else dynamic_risk
     st.caption(f"**Current risk used:** {risk_pct}%")
@@ -691,7 +691,7 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
     show_plan = (data.get("label") in ["Caution Buy", "Strong Buy"]) and not (sacred_1_fail or sacred_4_fail)
     
     if show_plan:
-        if "STRONG BUY" in data.get("label", ""):
+        if "Strong Buy" in data.get("label", ""):
             justification = "✅ **Strong Buy** (9/9) → Full conviction = **2.0%** account risk"
         else:
             justification = "✅ **Buy** (7–8/9) → Standard conviction = **1.0%** account risk"
@@ -787,7 +787,15 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
 
         # Chart stays the same
         st.subheader(f"📊 {tick} – 5-Day Price Action with EMA9 + MACD")
-        # (your existing chart code remains unchanged)
+        fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.03,
+                    row_heights=[0.7, 0.3])
+        # Candlestick
+        fig.add_trace(go.Candlestick(...), row=1, col=1)
+        # EMA9
+        fig.add_trace(go.Scatter(... name="EMA9"), row=1, col=1)
+        # MACD
+        fig.add_trace(go.Bar(...), row=2, col=1)
+        st.plotly_chart(fig, use_container_width=True)
 
     else:
         st.warning(f"**{data.get('label', 'UNKNOWN')} SIGNAL – {tick}**")
@@ -853,7 +861,7 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
         with st.container(border=True):
             st.subheader("🎯 Win Probability Estimate")
             st.metric("Based on 60-day realistic backtest", f"{r['win_rate']}% win rate")
-            prob_note = "STRONG BUY signals average 65-72% win rate with strict discipline" if "STRONG BUY" in data.get("label", "") else "BUY signals average 58-65% win rate with strict discipline"
+            prob_note = "Strong buy signals average 65-72% win rate with strict discipline" if "Strong Buy" in data.get("label", "") else "BUY signals average 58-65% win rate with strict discipline"
             st.caption(f"**{prob_note}** — This is your edge. Follow the plan.")
 
     st.caption("**Real-world trading on this strategy should return better than this backtest.**")
@@ -909,7 +917,7 @@ with st.expander("📋 Full Rules – All 9 Gates (Balanced vs Strict)", expande
     st.markdown("""
     ### ✅ 9 Gates Required for Signals
 
-    **STRONG BUY** = 9/9 gates  
+    **Strong Buy** = 9/9 gates  
     **BUY** = 7+/9 gates (must include time window)
 
     **Balanced mode** (more opportunities) vs **Strict mode** (higher win rate):
@@ -1058,8 +1066,8 @@ if auto_morning and dt_time(8, 0) <= now_et.time() <= dt_time(9, 0):
             try:
                 bot = TeleBot(st.session_state.telegram_token)
                 
-                summary = f"📈 Day Trade Monitor Morning Summary\n\nMarket Regime: {regime}\n\nSTRONG BUY Signals:\n"
-                strong = [row for row in st.session_state.get("ticker_data_list", []) if row["Signal"] == "STRONG BUY"]
+                summary = f"📈 Day Trade Monitor Morning Summary\n\nMarket Regime: {regime}\n\nStrong Buy Signals:\n"
+                strong = [row for row in st.session_state.get("ticker_data_list", []) if row["Signal"] == "Strong Buy"]
                 for row in strong:
                     summary += f"• {row['Ticker']} @ ${row['Price']} (+{row['Chg %']}%) — {row['Strength']}/9\n"
                 if not strong:
@@ -1085,8 +1093,8 @@ if st.button("📨 Send Morning Summary to Telegram (Manual with Image + Grok)",
         try:
             bot = TeleBot(st.session_state.telegram_token)
             
-            summary = f"📈 Day Trade Monitor Morning Summary\n\nMarket Regime: {regime}\n\nSTRONG BUY Signals:\n"
-            strong = [row for row in st.session_state.get("ticker_data_list", []) if row["Signal"] == "STRONG BUY"]
+            summary = f"📈 Day Trade Monitor Morning Summary\n\nMarket Regime: {regime}\n\nStrong Buy Signals:\n"
+            strong = [row for row in st.session_state.get("ticker_data_list", []) if row["Signal"] == "Strong Buy"]
             for row in strong:
                 summary += f"• {row['Ticker']} @ ${row['Price']} (+{row['Chg %']}%) — {row['Strength']}/9\n"
             if not strong:
