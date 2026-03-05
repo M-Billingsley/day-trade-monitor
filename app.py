@@ -676,8 +676,8 @@ if st.button("🔵 Send Test Telegram Now"):
     except Exception as e:
         st.error(f"Test failed: {str(e)[:80]}")
 
-# ====================== DAILY AUTO MORNING TELEGRAM + IMAGE (with opt-out) ======================
-auto_morning = st.checkbox("✅ Receive daily morning summary automatically (8-9 AM ET with Heat-Map image)", value=True, key="auto_morning")
+# ====================== DAILY AUTO MORNING TELEGRAM (text-only) ======================
+auto_morning = st.checkbox("✅ Receive daily morning summary automatically (8-9 AM ET)", value=True, key="auto_morning")
 
 now_et = datetime.now(ZoneInfo("America/New_York"))
 today_str = now_et.strftime("%Y-%m-%d")
@@ -687,63 +687,31 @@ if auto_morning and dt_time(8, 0) <= now_et.time() <= dt_time(9, 0):
         if "telegram_token" in st.session_state and "telegram_chat_id" in st.session_state:
             try:
                 bot = TeleBot(st.session_state.telegram_token)
-                
                 summary = f"📈 Day Trade Monitor Morning Summary\n\nMarket Regime: {regime}\n\nSTRONG BUY Signals:\n"
                 strong = [row for row in st.session_state.get("ticker_data_list", []) if row["Signal"] == "STRONG BUY"]
                 for row in strong:
                     summary += f"• {row['Ticker']} @ ${row['Price']} (+{row['Chg %']}%) — {row['Strength']}/9\n"
                 if not strong:
                     summary += "None right now\n"
-                
-                # Create Heat-Map + Table image (no engine parameter needed)
-                fig = go.Figure()
-                fig.add_trace(go.Table(
-                    header=dict(values=list(df_table.columns), fill_color="lightblue", align="center"),
-                    cells=dict(values=[df_table[col] for col in df_table.columns], align="center")
-                ))
-                fig.update_layout(title="Daily Heat-Map & Signals", height=600)
-                
-                img_bytes = BytesIO()
-                pio.write_image(fig, img_bytes, format="png")   # ← simplified, no engine
-                img_bytes.seek(0)
-                
                 bot.send_message(st.session_state.telegram_chat_id, summary)
-                bot.send_photo(st.session_state.telegram_chat_id, photo=img_bytes, caption="📸 Heat-Map + Signals Snapshot")
-                
                 st.session_state.daily_sent_date = today_str
                 st.toast("📨 Daily morning summary sent automatically!", icon="✅")
             except Exception as e:
                 st.error(f"Auto morning send failed: {str(e)[:80]}")
 
-# ====================== MANUAL MORNING SUMMARY BUTTON (with image) ======================
-if st.button("📨 Send Morning Summary to Telegram (Manual with Image)", type="primary", width="stretch"):
+# ====================== MANUAL MORNING SUMMARY BUTTON (text-only) ======================
+if st.button("📨 Send Morning Summary to Telegram (Manual)", type="primary", width="stretch"):
     if "telegram_token" in st.session_state and "telegram_chat_id" in st.session_state:
         try:
             bot = TeleBot(st.session_state.telegram_token)
-            
             summary = f"📈 Day Trade Monitor Morning Summary\n\nMarket Regime: {regime}\n\nSTRONG BUY Signals:\n"
             strong = [row for row in st.session_state.get("ticker_data_list", []) if row["Signal"] == "STRONG BUY"]
             for row in strong:
                 summary += f"• {row['Ticker']} @ ${row['Price']} (+{row['Chg %']}%) — {row['Strength']}/9\n"
             if not strong:
                 summary += "None right now\n"
-            
-            # Create Heat-Map + Table image (no engine parameter needed)
-            fig = go.Figure()
-            fig.add_trace(go.Table(
-                header=dict(values=list(df_table.columns), fill_color="lightblue", align="center"),
-                cells=dict(values=[df_table[col] for col in df_table.columns], align="center")
-            ))
-            fig.update_layout(title="Heat-Map & Signals Snapshot", height=600)
-            
-            img_bytes = BytesIO()
-            pio.write_image(fig, img_bytes, format="png")   # ← simplified, no engine
-            img_bytes.seek(0)
-            
             bot.send_message(st.session_state.telegram_chat_id, summary)
-            bot.send_photo(st.session_state.telegram_chat_id, photo=img_bytes, caption="📸 Heat-Map + Signals Snapshot")
-            
-            st.success("✅ Manual summary + image sent!")
+            st.success("✅ Manual summary sent!")
         except Exception as e:
             st.error(f"Failed: {str(e)[:80]}")
 
@@ -753,3 +721,4 @@ if 'last_refresh' not in st.session_state:
 if auto_refresh and time.time() - st.session_state.last_refresh >= 60:
     st.session_state.last_refresh = time.time()
     st.rerun()
+
