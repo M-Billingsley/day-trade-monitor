@@ -139,7 +139,7 @@ def get_grok_premarket_briefing(regime: str, qqq_chg: float, vix: float, top_sig
             api_key=st.secrets["xai"]["api_key"],
             base_url="https://api.x.ai/v1"
         )
-        prompt = f"""You are an elite day-trading analyst specializing in leveraged ETFs (SOXL, TQQQ, TECL, FNGU, NVDL, etc.).
+        prompt = f"""You are an elite day-trading analyst focused ONLY on long-only leveraged ETF momentum-pullback trades (SOXL, TQQQ, TECL, FNGU, NVDL, TSLL, SPXL, QLD, UPRO and any custom tickers added today).
 
 Date: {datetime.now(ZoneInfo("America/New_York")).strftime('%A, %B %d, %Y')}
 Current Regime: {regime}
@@ -149,21 +149,23 @@ VIX: {vix}
 Current strong signals:
 {top_signals or "None yet"}
 
-Task: Give me a concise, actionable premarket briefing focused ONLY on what matters for today’s day trades:
-1. Overnight news & events (earnings, data, geopolitics, sector moves)
-2. Premarket futures & gaps (NQ/ES + key names)
-3. Sector rotation (semis vs broad tech)
-4. Key technical levels & bias for SOXL, TQQQ, TECL, NVDL
-5. Overall trading bias & aggression level (Aggressive Long / Selective / Caution / Avoid)
-6. Any red flags or specific risks for leveraged trading today
+Task: Give me a concise, no-fluff premarket briefing strictly for today's long-only day trades:
+1. Overnight news & events that will move leveraged tech/semiconductor ETFs
+2. Premarket futures & key gaps (NQ, ES, NVDA, TSLA, SOXX)
+3. Sector rotation notes (semis vs broad tech vs single-stock names)
+4. Specific key levels & bias for SOXL, TQQQ, TECL, FNGU, NVDL, TSLL (and any custom tickers)
+5. Overall aggression level (Aggressive Long / Selective Long / Caution – tight stops only / Sit Out)
+6. Any red flags for volatility decay or gap risk on these names
 
-Be direct, no fluff. End exactly with: "**Recommended Approach:** ..." """
+Be direct and actionable. End exactly with: "**Recommended Approach:** ..."
 
+Focus on setups that fit a 9-gate morning pullback system. No bearish or short ideas."""
+        
         response = client.chat.completions.create(
-            model="grok-4-1-fast",          # fastest & cheapest high-quality model
+            model="grok-4-1-fast",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=900,
-            temperature=0.7
+            max_tokens=950,
+            temperature=0.65
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
@@ -173,8 +175,7 @@ Be direct, no fluff. End exactly with: "**Recommended Approach:** ..." """
 DEFAULT_ACCOUNT_SIZE = 30000
 CSV_FILE = "trade_log.csv"
 JOURNAL_FILE = "daily_signals.csv"
-TICKERS = ["SOXL", "TQQQ", "TECL", "SPXL", "FNGU", "BULZ", "TSLL", "NVDL", "BITX",
-           "QLD", "UPRO", "SSO", "LABU", "WEBL"]
+TICKERS = ["SOXL", "TQQQ", "TECL", "FNGU", "NVDL", "TSLL", "SPXL", "QLD", "UPRO"]
 KEY_UNDERLYINGS = ["NVDA", "TSLA", "AMD", "AVGO", "AAPL", "MSFT", "META", "AMZN"]
 
 if os.path.exists(CSV_FILE):
@@ -326,6 +327,21 @@ qqq_hist = get_history("QQQ", "5d")
 qqq_open = qqq_hist['Open'].iloc[-1] if not qqq_hist.empty else 0
 qqq_curr = qqq_hist['Close'].iloc[-1] if not qqq_hist.empty else 0
 qqq_chg_from_open = (qqq_curr - qqq_open) / qqq_open * 100 if qqq_open != 0 else 0
+
+# ====================== MANUAL TICKER INPUT ======================
+st.subheader("🔍 Add Custom Ticker (any symbol)")
+col_m1, col_m2 = st.columns([3, 1])
+with col_m1:
+    custom_ticker = st.text_input("Enter ticker (e.g. SMCI, ARM, COIN)", placeholder="SMCI", key="custom_ticker_input").upper().strip()
+with col_m2:
+    if st.button("➕ Add to Today's Watchlist", type="primary", use_container_width=True) and custom_ticker:
+        if custom_ticker not in TICKERS:
+            TICKERS.append(custom_ticker)
+            st.success(f"✅ {custom_ticker} added for today!")
+            st.rerun()
+        else:
+            st.info(f"{custom_ticker} already in list")
+
 
 # ====================== SIGNALS + HEAT-MAP ======================
 st.subheader("🚀 Trade Signals")
