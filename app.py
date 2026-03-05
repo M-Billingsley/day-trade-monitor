@@ -785,20 +785,89 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
 
             st.info(f"**Dynamic Risk Sizing Justification**\n\n{justification}")
 
-        # Chart stays the same
         st.subheader(f"📊 {tick} – 5-Day Price Action with EMA9 + MACD")
-        fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.03,
-                    row_heights=[0.7, 0.3])
-        # Candlestick
-        fig.add_trace(go.Candlestick(...), row=1, col=1)
-        # EMA9
-        fig.add_trace(go.Scatter(... name="EMA9"), row=1, col=1)
-        # MACD
-        fig.add_trace(go.Bar(...), row=2, col=1)
-        st.plotly_chart(fig, use_container_width=True)
 
-    else:
-        st.warning(f"**{data.get('label', 'UNKNOWN')} SIGNAL – {tick}**")
+        # Fetch fresh 5-day 15m data (same function the rest of the app uses)
+        hist = get_intraday_history(tick, period="5d", interval="15m")
+        
+        if not hist.empty:
+            # Calculate EMA9 and MACD for the chart
+            hist['EMA9'] = hist['Close'].ewm(span=9, adjust=False).mean()
+            
+            ema12 = hist['Close'].ewm(span=12, adjust=False).mean()
+            ema26 = hist['Close'].ewm(span=26, adjust=False).mean()
+            macd_line = ema12 - ema26
+            signal_line = macd_line.ewm(span=9, adjust=False).mean()
+            macd_hist = macd_line - signal_line
+
+            # Create clean subplot chart
+            fig = make_subplots(
+                rows=2, cols=1,
+                shared_xaxes=True,
+                vertical_spacing=0.03,
+                row_heights=[0.70, 0.30],
+                subplot_titles=(f"{tick} Price + EMA9", "MACD Histogram")
+            )
+
+            # Candlestick
+            fig.add_trace(
+                go.Candlestick(
+                    x=hist.index,
+                    open=hist['Open'],
+                    high=hist['High'],
+                    low=hist['Low'],
+                    close=hist['Close'],
+                    name="Price"
+                ),
+                row=1, col=1
+            )
+
+            # EMA9 line
+            fig.add_trace(
+                go.Scatter(
+                    x=hist.index,
+                    y=hist['EMA9'],
+                    line=dict(color="#FFD700", width=2),
+                    name="EMA9"
+                ),
+                row=1, col=1
+            )
+
+            # MACD Histogram (green/red bars)
+            colors = ['#00cc00' if val >= 0 else '#ff0000' for val in macd_hist]
+            fig.add_trace(
+                go.Bar(
+                    x=hist.index,
+                    y=macd_hist,
+                    marker_color=colors,
+                    name="MACD Histogram"
+                ),
+                row=2, col=1
+            )
+
+            # MACD lines (optional thin lines)
+            fig.add_trace(
+                go.Scatter(x=hist.index, y=macd_line, line=dict(color="#00ccff", width=1), name="MACD Line"),
+                row=2, col=1
+            )
+            fig.add_trace(
+                go.Scatter(x=hist.index, y=signal_line, line=dict(color="#ff00ff", width=1), name="Signal Line"),
+                row=2, col=1
+            )
+
+            # Layout polish
+            fig.update_layout(
+                height=680,
+                template="plotly_dark",
+                showlegend=True,
+                legend=dict(orientation="h", yanchor="bottom", y=1.02),
+                xaxis_rangeslider_visible=False
+            )
+            fig.update_xaxes(rangebreaks=[dict(bounds=["16:00", "09:30"], pattern="hour")])
+
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.warning("Chart data temporarily unavailable — refresh in 60 seconds")
 
     # ====================== FULL GATE RATIONALE (educational + motivational) ======================
     with st.expander("📖 Detailed Rationale: Why These 9 Gates Exist + Why Discipline Wins", expanded=False):
