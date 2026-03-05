@@ -347,7 +347,7 @@ with col_m1:
     custom_ticker = st.text_input("Enter ticker (e.g. SMCI, ARM, COIN)", placeholder="SMCI", key="custom_ticker_input").upper().strip()
 
 with col_m2:
-    if st.button("➕ Add to Watchlist", type="primary", use_container_width=True) and custom_ticker:
+    if st.button("➕ Add to Watchlist", type="primary", width="stretch") and custom_ticker:
         if custom_ticker not in st.session_state.dynamic_tickers:
             st.session_state.dynamic_tickers.append(custom_ticker)
             st.success(f"✅ {custom_ticker} added for today!")
@@ -356,7 +356,7 @@ with col_m2:
             st.info(f"{custom_ticker} already in list")
 
 with col_m3:
-    if st.button("🗑️ Reset to Core 9", use_container_width=True):
+    if st.button("🗑️ Reset to Core 9", width="stretch"):
         st.session_state.dynamic_tickers = ["SOXL", "TQQQ", "TECL", "FNGU", "NVDL", "TSLL", "SPXL", "QLD", "UPRO"]
         st.success("✅ Custom tickers cleared!")
         st.rerun()
