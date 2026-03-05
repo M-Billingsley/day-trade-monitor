@@ -298,10 +298,12 @@ for tick in TICKERS:
         conditions_met = sum([bull, vol_ok, rsi_ok, chg_from_open < (4.5 if not is_strict else 3),
                               near_9ema, time_ok, macd_bullish, histogram_ok, rel_strength_ok])
 
-        if conditions_met >= 8:          # ← changed from 9 to 8
+        if conditions_met >= 8:
             label = "STRONG BUY"
         elif conditions_met >= 7 and time_ok:
             label = "BUY"
+        elif conditions_met >= 6:          # ← new tier
+            label = "WATCH"
         elif chg_from_open > 6 or rsi > 82:
             label = "SIT"
         else:
@@ -386,28 +388,39 @@ if ticker_data_list:
             st.session_state.ticker_data = row["Data"]
             break
 
-# ====================== AUTO ALERTS ======================
+# ====================== AUTO ALERTS (Tiered: WATCH / BUY / STRONG BUY) ======================
 ticker_data_list = st.session_state.get("ticker_data_list", [])
 now_et = datetime.now(ZoneInfo("America/New_York"))
+
 if dt_time(9, 30) <= now_et.time() <= dt_time(12, 0):
     for row in ticker_data_list:
-        if row["Signal"] == "STRONG BUY":
-            key = f"last_alert_{row['Ticker']}"
-            last = st.session_state.get(key, 0)
-            if time.time() - last > 900:
-                msg = f"🚀 STRONG BUY {row['Ticker']} @ ${row['Price']} (+{row['Chg %']}%) — {now_et.strftime('%H:%M ET')}"
-                if all(k in st.session_state for k in ["twilio_sid","twilio_token","twilio_from","twilio_to"]):
-                    try:
-                        client = Client(st.session_state.twilio_sid, st.session_state.twilio_token)
-                        client.messages.create(body=msg, from_=st.session_state.twilio_from, to=st.session_state.twilio_to)
-                    except: pass
-                if all(k in st.session_state for k in ["telegram_token","telegram_chat_id"]):
+        strength = row["Strength"]
+        ticker = row["Ticker"]
+        price = row["Price"]
+        chg = row["Chg %"]
+        
+        if strength >= 6:
+            alert_key = f"alert_{ticker}_{strength}"
+            last = st.session_state.get(alert_key, 0)
+            
+            if time.time() - last > 900:  # 15-minute debounce per ticker/tier
+                if strength >= 8:
+                    msg = f"🚀 STRONG BUY {ticker} @ ${price} (+{chg}%) — {strength}/9 gates"
+                elif strength >= 7:
+                    msg = f"🟡 BUY {ticker} @ ${price} (+{chg}%) — {strength}/9 gates"
+                else:
+                    msg = f"🔍 WATCH {ticker} @ ${price} (+{chg}%) — {strength}/9 gates (building momentum)"
+                
+                # Send via Telegram
+                if "telegram_token" in st.session_state and "telegram_chat_id" in st.session_state:
                     try:
                         bot = TeleBot(st.session_state.telegram_token)
                         bot.send_message(st.session_state.telegram_chat_id, msg)
-                    except: pass
-                st.session_state[key] = time.time()
-                st.toast(f"📲 Alert sent for {row['Ticker']}", icon="🚀")
+                    except:
+                        pass
+                
+                st.session_state[alert_key] = time.time()
+                st.toast(f"Alert sent for {ticker} ({strength}/9)", icon="📨")
 
 # ====================== TRADE PLAN + DIAGNOSTICS ======================
 st.markdown("---")
