@@ -297,7 +297,7 @@ for tick in TICKERS:
         rel_strength_ok = chg_from_open > qqq_chg_from_open - 0.5
         conditions_met = sum([bull, vol_ok, rsi_ok, chg_from_open < (4.5 if not is_strict else 3),
                               near_9ema, time_ok, macd_bullish, histogram_ok, rel_strength_ok])
-        iif conditions_met >= 8:          # ← changed from 9 to 8
+        if conditions_met >= 8:          # ← changed from 9 to 8
     label = "STRONG BUY"
 elif conditions_met >= 7 and time_ok:
     label = "BUY"
