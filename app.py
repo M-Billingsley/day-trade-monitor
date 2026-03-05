@@ -386,13 +386,13 @@ for tick in TICKERS:
                               near_9ema, time_ok, macd_bullish, histogram_ok, rel_strength_ok])
 
         if conditions_met >= 9:
-            label = "STRONG BUY"
-        elif conditions_met >= 7 and time_ok:
-            label = "BUY"
-        elif chg_from_open > 6 or rsi > 82:
-            label = "SIT"
+            label = "Strong Buy"
+        elif conditions_met >= 8:
+            label = "Buy"
+        elif conditions_met >= 7:
+            label = "Watch"
         else:
-            label = "SHORT"
+            label = "Sit Out"
 
         ticker_data_list.append({
             "Ticker": tick,
@@ -512,20 +512,19 @@ if ticker_data_list:
     df_table = pd.DataFrame(table_data)
     df_table = df_table.sort_values(by="Strength", ascending=False)
 
+
     # ====================== ROW COLORING (Styler) ======================
     def color_row(row):
         signal = str(row["Signal"])
-        if "STRONG BUY" in signal:
-            return ['background-color: #15803d; color: white'] * len(row)
-        elif "BUY" in signal:
-            return ['background-color: #4ade80; color: black'] * len(row)
-        elif "WATCH" in signal:
-            return ['background-color: #f59e0b; color: black'] * len(row)
-        elif "SIT" in signal:
-            return ['background-color: #ca8a04; color: white'] * len(row)
-        else:
-            return ['background-color: #b91c1c; color: white'] * len(row)
-
+        if "Strong Buy" in signal:
+            return ['background-color: #15803d; color: white'] * len(row)   # dark green
+        elif "Buy" in signal:
+            return ['background-color: #4ade80; color: black'] * len(row)     # green
+        elif "Watch" in signal:
+            return ['background-color: #f59e0b; color: black'] * len(row)     # yellow
+        else:  # Sit Out
+            return ['background-color: #b91c1c; color: white'] * len(row)     # red
+            
     styled_table = df_table.style.apply(color_row, axis=1)
     
     st.dataframe(styled_table, width="stretch", height=530, hide_index=True)
@@ -548,7 +547,7 @@ if ticker_data_list:
             st.session_state.ticker_data = row["Data"]
             break
 
-# ====================== AUTO ALERTS (Tiered: WATCH / BUY / STRONG BUY) ======================
+# ====================== AUTO ALERTS (Only BUY + STRONG BUY) ======================
 ticker_data_list = st.session_state.get("ticker_data_list", [])
 now_et = datetime.now(ZoneInfo("America/New_York"))
 
@@ -559,17 +558,15 @@ if dt_time(9, 30) <= now_et.time() <= dt_time(12, 0):
         price = row["Price"]
         chg = row["Chg %"]
         
-        if strength >= 6:
+        if strength >= 8:  # Only Buy (8+) and Strong Buy (9)
             alert_key = f"alert_{ticker}_{strength}"
             last = st.session_state.get(alert_key, 0)
             
-            if time.time() - last > 900:  # 15-minute debounce per ticker/tier
-                if strength >= 8:
+            if time.time() - last > 900:  # 15-minute debounce
+                if strength >= 9:
                     msg = f"🚀 STRONG BUY {ticker} @ ${price} (+{chg}%) — {strength}/9 gates"
-                elif strength >= 7:
-                    msg = f"🟡 BUY {ticker} @ ${price} (+{chg}%) — {strength}/9 gates"
                 else:
-                    msg = f"🔍 WATCH {ticker} @ ${price} (+{chg}%) — {strength}/9 gates (building momentum)"
+                    msg = f"🟢 BUY {ticker} @ ${price} (+{chg}%) — {strength}/9 gates"
                 
                 # Send via Telegram
                 if "telegram_token" in st.session_state and "telegram_chat_id" in st.session_state:
