@@ -991,16 +991,8 @@ if os.path.exists(CSV_FILE):
         heat_df = pd.DataFrame(heat_rows)
         st.dataframe(heat_df, width="stretch", hide_index=True)
 
-# ====================== NEWS, RULES, PSYCHOLOGY, TRADE LOG ======================
+# ====================== RULES, PSYCHOLOGY, TRADE LOG ======================
 st.markdown("---")
-st.subheader("📰 Live News Feed")
-ticker_for_news = st.session_state.get("selected_ticker", "SOXL")
-try:
-    news_list = yf.Ticker(ticker_for_news).news[:5]
-    for item in news_list:
-        st.markdown(f"• [{item.get('title')}]({item.get('link')})")
-except:
-    st.write("News temporarily unavailable")
 
 with st.expander("📋 Full Rules – All 9 Gates (Balanced vs Strict)", expanded=False):
     st.markdown("""
