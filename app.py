@@ -412,9 +412,11 @@ for tick in st.session_state.dynamic_tickers:
         conditions_met = sum([bull, vol_ok, rsi_ok, chg_from_open < (4.5 if not is_strict else 3),
                               near_9ema, time_ok, macd_bullish, histogram_ok, rel_strength_ok])
 
+        sacred_passed = bull and (chg_from_open < (4.5 if not is_strict else 3))
+
         if conditions_met >= 9:
             label = "Strong Buy"
-        elif conditions_met >= 8:
+        elif conditions_met >= 8 or (conditions_met == 7 and sacred_passed):
             label = "Buy"
         elif conditions_met >= 7:
             label = "Watch"
@@ -668,7 +670,7 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
         st.caption("These two gates are non-negotiable. Overriding them destroys the edge.")
 
     # Show plan anyway if user wants (with heavy warning)
-    show_plan = ("BUY" in data.get("label", "") or override or override_9ema) and not (sacred_1_fail or sacred_4_fail)
+        show_plan = (data.get("label") in ["Buy", "Strong Buy"]) and not (sacred_1_fail or sacred_4_fail)
 
     if show_plan:
         if "STRONG BUY" in data.get("label", ""):
@@ -778,30 +780,26 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
         ### 🎯 The Core Philosophy
         This is **not** a random indicator dashboard — it’s a **proven morning pullback system** for leveraged ETFs.  
         The 9 gates were built from years of backtesting and live trading.  
+
         **Strict adherence = 58–72% win rate** (depending on signal strength).  
         Breaking the rules = random gambling with no edge.
 
         ### The 2 Sacred Gates — **NEVER Override These**
         **1. Bullish Trend (EMA50 > EMA200)**  
-        Keeps you only in the long-term uptrend where leveraged ETFs actually work. Without this, volatility decay destroys you. This gate alone boosts win rate ~15–20%.
+        Keeps you only in the long-term uptrend where leveraged ETFs actually work. Without this, volatility decay destroys you.
 
         **4. Healthy Pullback from Open (<4.5% Balanced / <3% Strict)**  
-        This is what makes you a disciplined buyer, not a chaser. It directly controls your average loss size (~1.8%). Never buy strength — wait for the dip.
+        This is what makes you a disciplined buyer, not a chaser. It directly controls your average loss size (~1.8%).
 
-        ### All 9 Gates — What They Do & Why They Matter
-        1. **Bullish Trend** — Long-term uptrend filter  
-        2. **Volume Spike** — Confirms real buying interest (1.5× or 1.8× yesterday)  
-        3. **RSI Not Overbought** — Prevents buying at exhaustion  
-        4. **Healthy Pullback** — Core mean-reversion entry (your edge)  
-        5. **Near 9-EMA** — Best risk/reward zone for entry  
-        6. **Morning Time Window** — Avoids afternoon chop & decay  
-        7. **MACD Line Bullish** — Momentum confirmation  
-        8. **MACD Histogram** — Acceleration filter (rising = stronger)  
-        9. **Relative Strength vs QQQ** — Only trade the leaders
+        ### Smart Signal Levels (Updated Rule)
+        - **Strong Buy** = 9/9 gates  
+        - **Buy** = 8/9 gates **or** 7/9 gates **if both sacred gates passed** (smart borderline setups)  
+        - **Watch** = 7/9 gates when a sacred gate failed  
+        - **Sit Out** = Everything else
 
         ### The Discipline Edge
-        Backtests show **Strong Buy (9/9)** averages 65–72% win rate.  
-        **Buy (8/9)** averages 58–65%.  
+        Backtests show **Strong Buy** signals average 65–72% win rate.  
+        **Buy** signals average 58–65% when you respect the rules.  
         Every time you override a sacred gate, your real-world results drop toward 45–50%.  
 
         **Rule #1 of this app:** The gates decide. Emotion does not.  
