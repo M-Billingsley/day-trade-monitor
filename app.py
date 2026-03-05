@@ -309,9 +309,10 @@ for tick in TICKERS:
 
         prev_vol = hist['Volume'].iloc[-2] if len(hist) > 1 else 0
         curr_vol = hist['Volume'].iloc[-1]
+        vol_ratio = curr_vol / prev_vol if prev_vol > 0 else 1.0
         vol_ok = curr_vol > prev_vol * (1.5 if not is_strict else 1.8)
 
-        # All indicators now on clean 15m bars (same as backtest)
+        # All indicators now on clean 15m bars
         delta = hist['Close'].diff()
         gain = delta.where(delta > 0, 0).rolling(14).mean()
         loss = -delta.where(delta < 0, 0).rolling(14).mean().abs()
@@ -326,6 +327,7 @@ for tick in TICKERS:
 
         ema9 = hist['Close'].ewm(span=9, adjust=False).mean().iloc[-1]
         near_9ema = abs(curr - ema9) / ema9 < (0.02 if not is_strict else 0.015)
+        dist_9ema_pct = abs(curr - ema9) / ema9 * 100 if ema9 != 0 else 0
 
         now_et_time = datetime.now(ZoneInfo("America/New_York")).time()
         time_ok = dt_time(9, 30) <= now_et_time <= dt_time(12, 0) if not is_strict else dt_time(9, 45) <= now_et_time <= dt_time(11, 30)
@@ -360,11 +362,29 @@ for tick in TICKERS:
             "Chg %": round(chg_from_open, 1),
             "Strength": conditions_met,
             "Signal": label,
-            "Data": { ... }  # keep your existing Data dict exactly as before
+            "Data": {
+                "curr": curr,
+                "prev": prev_close,
+                "chg_from_open": chg_from_open,
+                "rsi": rsi,
+                "bull": bull,
+                "vol_ok": vol_ok,
+                "near_9ema": near_9ema,
+                "time_ok": time_ok,
+                "macd_bullish": macd_bullish,
+                "histogram_ok": histogram_ok,
+                "rel_strength_ok": rel_strength_ok,
+                "label": label,
+                "strength": conditions_met,
+                "ema9": ema9,
+                "vol_ratio": vol_ratio,
+                "macd_line": macd_line.iloc[-1],
+                "macd_hist": macd_hist.iloc[-1],
+                "dist_9ema_pct": dist_9ema_pct
+            }
         })
     except:
         pass
-
 # ====================== LIVE HEAT-MAP ======================
 st.subheader("📈 Live Heat-Map – All 14 Tickers")
 heat_cols = st.columns(7)
