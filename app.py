@@ -898,17 +898,19 @@ def create_signals_image(df_table, regime):
     plt.close(fig)
     return img_bytes
 
-# ====================== DAILY AUTO MORNING TELEGRAM + PRETTIER IMAGE ======================
-auto_morning = st.checkbox("✅ Receive daily morning summary automatically (8-9 AM ET with image)", value=True, key="auto_morning")
+# ====================== DAILY AUTO MORNING TELEGRAM + PRETTIER IMAGE + GROK ======================
+auto_morning = st.checkbox("✅ Receive daily morning summary automatically (8-9 AM ET with image + Grok)", value=True, key="auto_morning")
 
 now_et = datetime.now(ZoneInfo("America/New_York"))
 today_str = now_et.strftime("%Y-%m-%d")
+grok_key = f"grok_briefing_{today_str}"
 
 if auto_morning and dt_time(8, 0) <= now_et.time() <= dt_time(9, 0):
     if st.session_state.get("daily_sent_date", "") != today_str:
         if "telegram_token" in st.session_state and "telegram_chat_id" in st.session_state:
             try:
                 bot = TeleBot(st.session_state.telegram_token)
+                
                 summary = f"📈 Day Trade Monitor Morning Summary\n\nMarket Regime: {regime}\n\nSTRONG BUY Signals:\n"
                 strong = [row for row in st.session_state.get("ticker_data_list", []) if row["Signal"] == "STRONG BUY"]
                 for row in strong:
@@ -916,21 +918,26 @@ if auto_morning and dt_time(8, 0) <= now_et.time() <= dt_time(9, 0):
                 if not strong:
                     summary += "None right now\n"
                 
+                # Append Grok briefing if it exists
+                if grok_key in st.session_state:
+                    summary += f"\n\n🧠 GROK PRE-MARKET BRIEFING:\n{st.session_state[grok_key]}"
+                
                 img_bytes = create_signals_image(df_table, regime)
                 
                 bot.send_message(st.session_state.telegram_chat_id, summary)
                 bot.send_photo(st.session_state.telegram_chat_id, photo=img_bytes, caption="📸 Daily Signals Snapshot")
                 
                 st.session_state.daily_sent_date = today_str
-                st.toast("📨 Daily morning summary + beautiful image sent!", icon="✅")
+                st.toast("📨 Daily morning summary + Grok + image sent automatically!", icon="✅")
             except Exception as e:
                 st.error(f"Auto send failed: {str(e)[:80]}")
 
-# ====================== MANUAL MORNING SUMMARY BUTTON (with prettier image) ======================
-if st.button("📨 Send Morning Summary to Telegram (Manual with Image)", type="primary", width="stretch"):
+#====================== MANUAL MORNING SUMMARY BUTTON (with prettier image + Grok) ======================
+if st.button("📨 Send Morning Summary to Telegram (Manual with Image + Grok)", type="primary", width="stretch"):
     if "telegram_token" in st.session_state and "telegram_chat_id" in st.session_state:
         try:
             bot = TeleBot(st.session_state.telegram_token)
+            
             summary = f"📈 Day Trade Monitor Morning Summary\n\nMarket Regime: {regime}\n\nSTRONG BUY Signals:\n"
             strong = [row for row in st.session_state.get("ticker_data_list", []) if row["Signal"] == "STRONG BUY"]
             for row in strong:
@@ -938,11 +945,16 @@ if st.button("📨 Send Morning Summary to Telegram (Manual with Image)", type="
             if not strong:
                 summary += "None right now\n"
             
+            # Append Grok briefing if it exists
+            grok_key = f"grok_briefing_{today_str}"
+            if grok_key in st.session_state:
+                summary += f"\n\n🧠 GROK PRE-MARKET BRIEFING:\n{st.session_state[grok_key]}"
+            
             img_bytes = create_signals_image(df_table, regime)
             
             bot.send_message(st.session_state.telegram_chat_id, summary)
             bot.send_photo(st.session_state.telegram_chat_id, photo=img_bytes, caption="📸 Daily Signals Snapshot")
-            st.success("✅ Manual summary + beautiful image sent!")
+            st.success("✅ Manual summary + Grok briefing + image sent!")
         except Exception as e:
             st.error(f"Failed: {str(e)[:80]}")
 
