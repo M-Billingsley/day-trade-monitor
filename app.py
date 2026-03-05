@@ -709,7 +709,27 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
                 st.write(f"• Sell {half_shares:,} shares (50%) at ${sell_p:,.2f} (+{int(pct)}%) → ${profit_half:,.0f} profit")
 
             st.write(f"• Trail the remaining {remaining:,} shares using breakeven + trailing stop")
- 
+            
+            # ====================== PROFIT CALCULATOR SLIDER ======================
+            st.markdown("**What-If Profit Calculator**")
+            exit_price = st.slider(
+                "Hypothetical Exit Price $",
+                min_value=round(suggested_buy * 0.92, 2),
+                max_value=round(suggested_buy * 1.25, 2),
+                value=round(suggested_buy * 1.05, 2),
+                step=0.01,
+                format="$%.2f"
+            )
+            
+            total_profit = round((exit_price - suggested_buy) * shares)
+            pct_gain = round((exit_price - suggested_buy) / suggested_buy * 100, 1)
+            
+            col_p1, col_p2 = st.columns(2)
+            with col_p1:
+                st.metric("Total Profit if Sold ALL Shares", f"${total_profit:,.0f}", f"{pct_gain:+.1f}%")
+            with col_p2:
+                st.metric("Per Share Profit", f"${(exit_price - suggested_buy):.2f}")
+            
             # ====================== ONE-CLICK LOG TRADE ======================
             st.markdown("**5. Quick Log This Trade**")
             if st.button("📝 Log This Trade to Journal (auto-filled)", type="primary", use_container_width=True):
