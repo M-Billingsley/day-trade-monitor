@@ -526,7 +526,16 @@ st.subheader("📋 Signal Overview Table (click row to open plan)")
 if ticker_data_list:
     table_data = []
     for row in ticker_data_list:
-        color_emoji = "🟢" if "STRONG BUY" in row["Signal"] else "🟡" if "BUY" in row["Signal"] else "🟠" if "WATCH" in row["Signal"] else "🟠" if row["Signal"] == "SIT" else "🔴"
+        # Updated emojis + logic for Caution Buy
+        if "Strong Buy" in row["Signal"]:
+            color_emoji = "🟢"
+        elif "Caution Buy" in row["Signal"] or "Buy" in row["Signal"]:
+            color_emoji = "🟡"          # yellow circle for Caution Buy
+        elif "Watch" in row["Signal"]:
+            color_emoji = "🟡"
+        else:
+            color_emoji = "🔴"
+        
         table_data.append({
             "Signal": f"{color_emoji} {row['Signal']}",
             "Ticker": row["Ticker"],
@@ -541,19 +550,20 @@ if ticker_data_list:
     df_table = pd.DataFrame(table_data)
     df_table = df_table.sort_values(by="Strength", ascending=False)
 
-
     # ====================== ROW COLORING (Styler) ======================
     def color_row(row):
         signal = str(row["Signal"])
         if "Strong Buy" in signal:
             return ['background-color: #15803d; color: white'] * len(row)   # dark green
+        elif "Caution Buy" in signal:
+            return ['background-color: #f59e0b; color: black'] * len(row)   # yellow - caution
         elif "Buy" in signal:
-            return ['background-color: #4ade80; color: black'] * len(row)     # green
+            return ['background-color: #16a34a; color: black'] * len(row)   # green
         elif "Watch" in signal:
-            return ['background-color: #f59e0b; color: black'] * len(row)     # yellow
+            return ['background-color: #f59e0b; color: black'] * len(row)   # yellow
         else:  # Sit Out
-            return ['background-color: #b91c1c; color: white'] * len(row)     # red
-            
+            return ['background-color: #b91c1c; color: white'] * len(row)   # red
+
     styled_table = df_table.style.apply(color_row, axis=1)
     
     st.dataframe(styled_table, width="stretch", height=530, hide_index=True)
