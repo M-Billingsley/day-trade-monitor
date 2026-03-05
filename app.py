@@ -697,7 +697,7 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
             st.caption(f"Limit range: ${buy_low:,.2f} – ${buy_high:,.2f}")
 
             # === CLEAN TAKE-PROFIT TARGETS ===
-                       st.markdown("**2. Take-Profit Targets (GTC)**")
+            st.markdown("**2. Take-Profit Targets (GTC)**")
             half_shares = shares // 2
             remaining = shares - half_shares
 
