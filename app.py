@@ -694,7 +694,7 @@ if auto_morning and dt_time(8, 0) <= now_et.time() <= dt_time(9, 0):
                 if not strong:
                     summary += "None right now\n"
                 
-                # Create Heat-Map + Table image
+                # Create Heat-Map + Table image (no engine parameter needed)
                 fig = go.Figure()
                 fig.add_trace(go.Table(
                     header=dict(values=list(df_table.columns), fill_color="lightblue", align="center"),
@@ -703,7 +703,7 @@ if auto_morning and dt_time(8, 0) <= now_et.time() <= dt_time(9, 0):
                 fig.update_layout(title="Daily Heat-Map & Signals", height=600)
                 
                 img_bytes = BytesIO()
-                pio.write_image(fig, img_bytes, format="png", engine="kaleido")
+                pio.write_image(fig, img_bytes, format="png")   # ← simplified, no engine
                 img_bytes.seek(0)
                 
                 bot.send_message(st.session_state.telegram_chat_id, summary)
@@ -714,7 +714,7 @@ if auto_morning and dt_time(8, 0) <= now_et.time() <= dt_time(9, 0):
             except Exception as e:
                 st.error(f"Auto morning send failed: {str(e)[:80]}")
 
-# ====================== MANUAL MORNING SUMMARY BUTTON ======================
+# ====================== MANUAL MORNING SUMMARY BUTTON (with image) ======================
 if st.button("📨 Send Morning Summary to Telegram (Manual with Image)", type="primary", width="stretch"):
     if "telegram_token" in st.session_state and "telegram_chat_id" in st.session_state:
         try:
@@ -727,7 +727,7 @@ if st.button("📨 Send Morning Summary to Telegram (Manual with Image)", type="
             if not strong:
                 summary += "None right now\n"
             
-            # Create Heat-Map + Table image
+            # Create Heat-Map + Table image (no engine parameter needed)
             fig = go.Figure()
             fig.add_trace(go.Table(
                 header=dict(values=list(df_table.columns), fill_color="lightblue", align="center"),
@@ -736,7 +736,7 @@ if st.button("📨 Send Morning Summary to Telegram (Manual with Image)", type="
             fig.update_layout(title="Heat-Map & Signals Snapshot", height=600)
             
             img_bytes = BytesIO()
-            pio.write_image(fig, img_bytes, format="png", engine="kaleido")
+            pio.write_image(fig, img_bytes, format="png")   # ← simplified, no engine
             img_bytes.seek(0)
             
             bot.send_message(st.session_state.telegram_chat_id, summary)
