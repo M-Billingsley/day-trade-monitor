@@ -709,7 +709,29 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
                 st.write(f"• Sell {half_shares:,} shares (50%) at ${sell_p:,.2f} (+{int(pct)}%) → ${profit_half:,.0f} profit")
 
             st.write(f"• Trail the remaining {remaining:,} shares using breakeven + trailing stop")
-
+ 
+            # ====================== ONE-CLICK LOG TRADE ======================
+            st.markdown("**5. Quick Log This Trade**")
+            if st.button("📝 Log This Trade to Journal (auto-filled)", type="primary", use_container_width=True):
+                entry_price = suggested_buy
+                notes_auto = f"Signal: {data.get('label')} | Strength: {data.get('strength')}/9 | Risk: {risk_pct:.1f}% | Plan followed"
+                
+                new_row = pd.DataFrame([{
+                    "Date": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                    "Ticker": tick,
+                    "Entry Price": entry_price,
+                    "Exit Price": "",
+                    "Shares": shares,
+                    "P/L $": "",
+                    "Notes": notes_auto
+                }])
+                
+                trades_df = pd.concat([trades_df, new_row], ignore_index=True)
+                trades_df.to_csv(CSV_FILE, index=False)
+                
+                st.success(f"✅ Trade logged! {tick} @ ${entry_price:,.2f} — {shares:,} shares")
+                st.rerun()
+ 
             # === STOP & TRAILING ===
             st.markdown("**3. Protective Stop**")
             stop = round(suggested_buy * 0.98, 2)
