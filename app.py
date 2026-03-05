@@ -700,7 +700,6 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
                 st.markdown(f"• Sell **{half_shares:,} shares** (50%) at **${sell_p:,.2f}** (+{int(pct)}%) → **${profit_half:,.0f}** profit")
             
             st.caption(f"• Trail the remaining **{remaining:,} shares** using breakeven + trailing stop")
-            st.caption("Remaining 50% trailed to breakeven + trailing stop as shown below")
             st.markdown("**3. Protective Stop**")
             stop = round(suggested_buy * 0.98, 2)
             st.markdown(f"Stop-Loss at **${stop:,.2f}**")
