@@ -355,9 +355,9 @@ st.subheader("📋 Signal Overview Table (click row to open plan)")
 if ticker_data_list:
     table_data = []
     for row in ticker_data_list:
-        color = "🟢" if "STRONG BUY" in row["Signal"] else "🟡" if "BUY" in row["Signal"] else "🟠" if row["Signal"] == "SIT" else "🔴"
+        color_emoji = "🟢" if "STRONG BUY" in row["Signal"] else "🟡" if "BUY" in row["Signal"] else "🟠" if "WATCH" in row["Signal"] else "🟠" if row["Signal"] == "SIT" else "🔴"
         table_data.append({
-            "Signal": f"{color} {row['Signal']}",
+            "Signal": f"{color_emoji} {row['Signal']}",
             "Ticker": row["Ticker"],
             "Strength": row["Strength"],
             "Price": row["Price"],
@@ -369,19 +369,37 @@ if ticker_data_list:
         })
     df_table = pd.DataFrame(table_data)
     df_table = df_table.sort_values(by="Strength", ascending=False)
+
+    # ====================== ROW COLORING (Styler) ======================
+    def color_row(row):
+        signal = str(row["Signal"])
+        if "STRONG BUY" in signal:
+            return ['background-color: #15803d; color: white'] * len(row)
+        elif "BUY" in signal:
+            return ['background-color: #4ade80; color: black'] * len(row)
+        elif "WATCH" in signal:
+            return ['background-color: #f59e0b; color: black'] * len(row)
+        elif "SIT" in signal:
+            return ['background-color: #ca8a04; color: white'] * len(row)
+        else:
+            return ['background-color: #b91c1c; color: white'] * len(row)
+
+    styled_table = df_table.style.apply(color_row, axis=1)
     
-    st.dataframe(df_table, width="stretch", height=530, hide_index=True)
-    
+    st.dataframe(styled_table, width="stretch", height=530, hide_index=True)
+
+    # Narrowed, centered, bolder dropdown + auto-load plan
     st.markdown("<h4 style='text-align: center; margin-bottom: 8px;'>Open full plan for:</h4>", unsafe_allow_html=True)
     col1, col_mid, col3 = st.columns([1, 2, 1])
     with col_mid:
         selected = st.selectbox(
-            "Choose ticker for full plan",          # ← non-empty label
+            "Choose ticker for full plan",
             df_table["Ticker"], 
             key="plan_select", 
             label_visibility="hidden"
         )
     
+    # Auto-load the selected plan
     for row in ticker_data_list:
         if row["Ticker"] == selected:
             st.session_state.selected_ticker = selected
