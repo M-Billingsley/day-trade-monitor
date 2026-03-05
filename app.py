@@ -13,6 +13,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import plotly.io as pio
 from io import BytesIO
+from openai import OpenAI
 
 # ====================== PAGE CONFIG ======================
 st.set_page_config(
