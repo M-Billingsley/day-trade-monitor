@@ -670,7 +670,7 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
         st.caption("These two gates are non-negotiable. Overriding them destroys the edge.")
 
     # Show plan anyway if user wants (with heavy warning)
-        show_plan = (data.get("label") in ["Buy", "Strong Buy"]) and not (sacred_1_fail or sacred_4_fail)
+    show_plan = (data.get("label") in ["Buy", "Strong Buy"]) and not (sacred_1_fail or sacred_4_fail)
 
     if show_plan:
         if "STRONG BUY" in data.get("label", ""):
