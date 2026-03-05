@@ -676,7 +676,9 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
         else:
             justification = "✅ **Buy** (7–8/9) → Standard conviction = **1.0%** account risk"
 
-        dynamic_risk_dollars = account_size * (2.0 if "STRONG BUY" in data.get("label", "") else 1.0) / 100
+            # Fix risk calculation (handles "1.0%" string)
+            risk_pct_float = float(str(risk_pct).strip("%")) / 100
+     dynamic_risk_dollars = account_size * risk_pct_float
 
         with st.container(border=True):
             st.subheader("Execution Instructions – BUY LONG")
@@ -704,9 +706,9 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
             for pct in [3.0, 5.0]:
                 sell_p = round(suggested_buy * (1 + pct / 100), 2)
                 profit_half = round((sell_p - suggested_buy) * half_shares)
-                st.write(f"• Sell **{half_shares:,} shares** (50%) at **${sell_p:,.2f}** (+{int(pct)}%) → **${profit_half:,.0f}** profit")
+                st.write(f"• Sell {half_shares:,} shares (50%) at ${sell_p:,.2f} (+{int(pct)}%) → ${profit_half:,.0f} profit")
 
-            st.write(f"• Trail the remaining **{remaining:,} shares** using breakeven + trailing stop")
+            st.write(f"• Trail the remaining {remaining:,} shares using breakeven + trailing stop")
 
             # === STOP & TRAILING ===
             st.markdown("**3. Protective Stop**")
