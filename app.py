@@ -369,20 +369,21 @@ if ticker_data_list:
     
     st.dataframe(df_table, width="stretch", height=530, hide_index=True)
     
-    # Narrowed, centered, bolder dropdown + auto-load plan
     st.markdown("<h4 style='text-align: center; margin-bottom: 8px;'>Open full plan for:</h4>", unsafe_allow_html=True)
     col1, col_mid, col3 = st.columns([1, 2, 1])
     with col_mid:
-        selected = st.selectbox("", df_table["Ticker"], key="plan_select", label_visibility="collapsed")
+        selected = st.selectbox(
+            "Choose ticker for full plan",          # ← non-empty label
+            df_table["Ticker"], 
+            key="plan_select", 
+            label_visibility="hidden"
+        )
     
-    # Auto-load the selected plan
     for row in ticker_data_list:
         if row["Ticker"] == selected:
             st.session_state.selected_ticker = selected
             st.session_state.ticker_data = row["Data"]
             break
-
-st.session_state.ticker_data_list = ticker_data_list
 
 # ====================== AUTO ALERTS ======================
 ticker_data_list = st.session_state.get("ticker_data_list", [])
