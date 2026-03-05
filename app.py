@@ -680,6 +680,10 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
 
         with st.container(border=True):
             st.subheader("Execution Instructions – BUY LONG")
+
+            # Use the ACTUAL risk % the user chose (fixes huge profit numbers)
+            dynamic_risk_dollars = account_size * risk_pct / 100
+
             buy_low = round(data.get("curr", 0) * 0.97, 2)
             buy_high = round(data.get("curr", 0) * 0.985, 2)
             suggested_buy = round((buy_low + buy_high) / 2, 2)
@@ -687,9 +691,12 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
             shares = int(dynamic_risk_dollars / risk_per_share)
             shares = max(25, round(shares / 25) * 25)
             total_cost = round(shares * suggested_buy, 2)
-            st.markdown(f"**Buy Order:** - **{shares:,} shares** at **${suggested_buy:,.2f}**")
+
+            st.markdown(f"**Buy Order:** {shares:,} shares at **${suggested_buy:,.2f}**")
             st.markdown(f"- **Total Cost:** **${total_cost:,.2f}**")
             st.caption(f"Limit range: ${buy_low:,.2f} – ${buy_high:,.2f}")
+
+            # === CLEAN TAKE-PROFIT TARGETS ===
             st.markdown("**2. Take-Profit Targets (GTC)**")
             half_shares = shares // 2
             remaining = shares - half_shares
@@ -697,18 +704,28 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
             for pct in [3.0, 5.0]:
                 sell_p = round(suggested_buy * (1 + pct / 100), 2)
                 profit_half = round((sell_p - suggested_buy) * half_shares)
-                st.write(f"• Sell **{half_shares:,} shares** (50%) at **${sell_p:,.2f}** (+{int(pct)}%) → **${profit_half:,.0f}** profit")
+                st.markdown(
+                    f"• Sell <b>{half_shares:,} shares</b> (50%) at <b>${sell_p:,.2f}</b> "
+                    f"(+{int(pct)}%) → <b>${profit_half:,.0f}</b> profit",
+                    unsafe_allow_html=True
+                )
 
-            st.write(f"• Trail the remaining **{remaining:,} shares** using breakeven + trailing stop")
-            
+            st.markdown(
+                f"• Trail the remaining <b>{remaining:,} shares</b> using breakeven + trailing stop",
+                unsafe_allow_html=True
+            )
+
+            # === STOP & TRAILING ===
             st.markdown("**3. Protective Stop**")
             stop = round(suggested_buy * 0.98, 2)
             st.markdown(f"Stop-Loss at **${stop:,.2f}**")
             st.caption(f"Max risk this trade ≈ **${dynamic_risk_dollars:,.0f}** ({risk_pct:.1f}%)")
+
             st.markdown("**4. Smart Trailing Stop Suggestion**")
             trail_pct = 1.0 if "Strong Buy" in data.get("label", "") else 0.5
             breakeven_trail = round(suggested_buy * (1 + trail_pct / 100), 2)
-            st.write(f"• Once +3% target is hit, move stop to **${breakeven_trail:,.2f}**")
+            st.markdown(f"• Once +3% target is hit, move stop to **${breakeven_trail:,.2f}**")
+
             st.info(f"**Dynamic Risk Sizing Justification**\n\n{justification}")
 
         # Chart stays the same
