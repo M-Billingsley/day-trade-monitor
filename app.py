@@ -204,6 +204,15 @@ for prefix, section in [("twilio_", "twilio"), ("telegram_", "telegram")]:
 
 # ====================== TITLE + REGIME ======================
 st.title("Day Trade Monitor")
+st.markdown("""
+<div style="background:#b91c1c; color:white; padding:20px; border-radius:12px; text-align:center; font-size:1.15rem; margin:15px 0;">
+⚠️ <strong>HIGH RISK WARNING</strong><br>
+This app uses leveraged ETFs (SOXL, TQQQ, etc.). They can lose 50%+ in one day.<br>
+This is for educational purposes only — NOT financial advice.<br>
+Only use money you can afford to lose completely.
+</div>
+""", unsafe_allow_html=True)
+
 st.caption("High Risk / High Reward – Rules only, no emotion")
 
 now_et = datetime.now(ZoneInfo("America/New_York"))
@@ -1163,7 +1172,7 @@ if st.button("📨 Send Morning Summary to Telegram (Manual with Image + Grok)",
             bot = TeleBot(st.session_state.telegram_token)
             
             summary = f"📈 Day Trade Monitor Morning Summary\n\nMarket Regime: {regime}\n\nStrong Buy Signals:\n"
-            strong = [row for row in st.session_state.get("ticker_data_list", []) if row["Signal"] == "Strong Buy"]
+            strong = [row for row in st.session_state.get("ticker_data_list", []) if "Strong Buy" in row["Signal"]]
             for row in strong:
                 summary += f"• {row['Ticker']} @ ${row['Price']} (+{row['Chg %']}%) — {row['Strength']}/9\n"
             if not strong:
