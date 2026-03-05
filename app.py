@@ -242,43 +242,6 @@ st.markdown(f"""
 </h3>
 """, unsafe_allow_html=True)
 
-# ====================== GROK PRE-MARKET INTELLIGENCE (AUTO) ======================
-st.subheader("🧠 Grok Pre-Market Intelligence")
-st.caption("Auto-generates 7:30–9:30 ET • Powered by real Grok-4")
-
-today_str = now_et.strftime("%Y-%m-%d")
-grok_key = f"grok_briefing_{today_str}"
-
-# Build quick signal summary for Grok
-strong_summary = "\n".join([
-    f"• {row['Ticker']} @ ${row['Price']} ({row['Chg %']}%) — {row['Strength']}/9"
-    for row in ticker_data_list if "STRONG BUY" in row["Signal"]
-]) or "None detected yet"
-
-# Auto-run in morning window
-if dt_time(7, 30) <= now_et.time() <= dt_time(9, 30):
-    if grok_key not in st.session_state:
-        with st.spinner("Grok analyzing overnight news + futures..."):
-            briefing = get_grok_premarket_briefing(regime, qqq_chg_from_open, vix, strong_summary)
-            st.session_state[grok_key] = briefing
-
-# Display
-if grok_key in st.session_state:
-    with st.expander("📋 Today's Grok Briefing (click to expand)", expanded=True):
-        st.markdown(st.session_state[grok_key])
-        if st.button("🔄 Refresh Grok Analysis", key="refresh_grok"):
-            del st.session_state[grok_key]
-            st.rerun()
-else:
-    st.info("🕒 Grok briefing will auto-generate between 7:30–9:30 ET (or click the button below)")
-
-# Manual button (works anytime)
-if st.button("🔄 Generate Grok Briefing Now", type="primary", use_container_width=True):
-    with st.spinner("Calling Grok..."):
-        briefing = get_grok_premarket_briefing(regime, qqq_chg_from_open, vix, strong_summary)
-        st.session_state[grok_key] = briefing
-        st.rerun()
-
 # ====================== BROAD MARKET INDICES ======================
 st.subheader("📊 Broad Market Indices")
 idx_cols = st.columns(3)
@@ -460,6 +423,52 @@ for tick in TICKERS:
         })
     except:
         pass
+
+# Save signals for later sections (auto alerts, Grok, etc.)
+st.session_state.ticker_data_list = ticker_data_list
+
+# ====================== GROK PRE-MARKET INTELLIGENCE (AUTO) ======================
+st.subheader("🧠 Grok Pre-Market Intelligence")
+st.caption("Auto-generates 7:30–9:30 ET • Powered by real Grok-4")
+
+today_str = now_et.strftime("%Y-%m-%d")
+grok_key = f"grok_briefing_{today_str}"
+
+# Defensive fallbacks so it never crashes
+ticker_list = st.session_state.get("ticker_data_list", [])
+strong_summary = "\n".join([
+    f"• {row['Ticker']} @ ${row['Price']} ({row['Chg %']}%) — {row['Strength']}/9"
+    for row in ticker_list if "STRONG BUY" in row.get("Signal", "")
+]) or "None detected yet"
+
+current_regime = regime if 'regime' in locals() else "Neutral Day"
+current_qqq = qqq_chg_from_open if 'qqq_chg_from_open' in locals() else 0.0
+current_vix = vix if 'vix' in locals() else 18.0
+
+# Auto-run in morning window
+if dt_time(7, 30) <= now_et.time() <= dt_time(9, 30):
+    if grok_key not in st.session_state:
+        with st.spinner("Grok analyzing overnight news + futures..."):
+            briefing = get_grok_premarket_briefing(current_regime, current_qqq, current_vix, strong_summary)
+            st.session_state[grok_key] = briefing
+
+# Display
+if grok_key in st.session_state:
+    with st.expander("📋 Today's Grok Briefing (click to expand)", expanded=True):
+        st.markdown(st.session_state[grok_key])
+        if st.button("🔄 Refresh Grok Analysis", key="refresh_grok"):
+            del st.session_state[grok_key]
+            st.rerun()
+else:
+    st.info("🕒 Grok briefing will auto-generate between 7:30–9:30 ET (or click the button below)")
+
+# Manual button (works anytime)
+if st.button("🔄 Generate Grok Briefing Now", type="primary", use_container_width=True):
+    with st.spinner("Calling Grok..."):
+        briefing = get_grok_premarket_briefing(current_regime, current_qqq, current_vix, strong_summary)
+        st.session_state[grok_key] = briefing
+        st.rerun()
+        
 # ====================== LIVE HEAT-MAP ======================
 st.subheader("📈 Live Heat-Map – All 14 Tickers")
 heat_cols = st.columns(7)
