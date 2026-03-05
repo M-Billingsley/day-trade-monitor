@@ -417,7 +417,7 @@ for tick in st.session_state.dynamic_tickers:
         if conditions_met >= 9:
             label = "Strong Buy"
         elif conditions_met >= 8 or (conditions_met == 7 and sacred_passed):
-            label = "Buy"
+            label = "Caution Buy"
         elif conditions_met >= 7:
             label = "Watch"
         else:
@@ -616,7 +616,15 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
     data = st.session_state.ticker_data
     tick = st.session_state.selected_ticker
     override = st.checkbox("**Override Time Window**", value=False, key="time_override")
-    st.success(f"🚀 **{data.get('label', 'UNKNOWN')} – {tick}**")
+
+    # Caution Buy badge for conditional 7-gate setups
+    is_caution_buy = data.get("label") == "Caution Buy" and data.get("strength", 0) == 7
+
+    header = f"🚀 **{data.get('label', 'UNKNOWN')} – {tick}**"
+    if is_caution_buy:
+        header = f"🚀 **Caution Buy** 🟡 (7/9 gates — sacred gates passed) – {tick}"
+
+    st.success(header)
 
     st.subheader("🔍 9 Trade Gates – Pass/Fail")
 
@@ -670,8 +678,8 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
         st.caption("These two gates are non-negotiable. Overriding them destroys the edge.")
 
     # Show plan anyway if user wants (with heavy warning)
-    show_plan = (data.get("label") in ["Buy", "Strong Buy"]) and not (sacred_1_fail or sacred_4_fail)
-
+    show_plan = (data.get("label") in ["Caution Buy", "Strong Buy"]) and not (sacred_1_fail or sacred_4_fail)
+    
     if show_plan:
         if "STRONG BUY" in data.get("label", ""):
             justification = "✅ **Strong Buy** (9/9) → Full conviction = **2.0%** account risk"
