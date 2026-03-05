@@ -6,12 +6,10 @@ from zoneinfo import ZoneInfo
 import os
 import time
 import numpy as np
-from twilio.rest import Client
 import telebot
 from telebot import TeleBot
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import plotly.io as pio
 from io import BytesIO
 from openai import OpenAI
 
