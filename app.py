@@ -170,7 +170,7 @@ Focus on setups that fit a 9-gate morning pullback system. No bearish or short i
         return f"⚠️ Grok unavailable right now: {str(e)[:120]}"
 
 # ====================== CONFIG ======================
-DEFAULT_ACCOUNT_SIZE = 30000
+DEFAULT_ACCOUNT_SIZE = 20000
 CSV_FILE = "trade_log.csv"
 JOURNAL_FILE = "daily_signals.csv"
 TICKERS = ["SOXL", "TQQQ", "TECL", "FNGU", "NVDL", "TSLL", "SPXL", "QLD", "UPRO"]
