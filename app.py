@@ -772,7 +772,7 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
             
             # ====================== ONE-CLICK LOG TRADE ======================
             st.markdown("**5. Quick Log This Trade**")
-            if st.button("📝 Log This Trade to Journal (auto-filled)", type="primary", use_container_width='Stretch"):
+            if st.button("📝 Log This Trade to Journal (auto-filled)", type="primary", use_container_width="Stretch"):
                 entry_price = suggested_buy
                 notes_auto = f"Signal: {data.get('label')} | Strength: {data.get('strength')}/9 | Risk: {risk_pct:.1f}% | Plan followed"
                 
