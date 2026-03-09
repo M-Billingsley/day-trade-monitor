@@ -150,15 +150,29 @@ Current prices (use these EXACT numbers — do not guess or use old data):
 Current strong signals:
 {top_signals or "None yet"}
 
-Task: Give me a concise, no-fluff premarket briefing strictly for today's long-only day trades:
-1. Overnight news & events that will move leveraged tech/semiconductor ETFs
-2. Premarket futures & key gaps (NQ, ES, NVDA, TSLA, SOXX)
-3. Sector rotation notes (semis vs broad tech vs single-stock names)
-4. Specific key levels & bias for SOXL, TQQQ, TECL, FNGU, NVDL, TSLL (and any custom tickers)
-5. Overall aggression level (Aggressive Long / Selective Long / Caution – tight stops only / Sit Out)
-6. Any red flags for volatility decay or gap risk on these names
+EXAMPLES OF PERFECT BRIEFINGS (copy this exact style):
 
-Be direct and actionable. End exactly with: "**Recommended Approach:** ..."
+Example 1 (Bullish day):
+1. Overnight news: NVDA beat earnings + China stimulus rumors lifting semis.
+2. Premarket futures: NQ +1.4%, ES +0.9%, NVDA gapping +3.2%, SOXX +2.1%.
+3. Sector rotation: Semis leading (SOXL +4.1% pre), broad tech following.
+4. Key levels: SOXL support 38.50 / resistance 42.80; TQQQ 72.30–78.50; TECL 95–102.
+5. Aggression level: Aggressive Long — strong momentum.
+6. Red flags: None — low gap risk today.
+
+**Recommended Approach:** Enter 9-gate pullbacks aggressively on SOXL/TQQQ/TECL with 2% risk. Trail after +3%.
+
+Example 2 (Neutral/choppy day):
+1. Overnight news: Mixed PPI data + Fed speakers later.
+2. Premarket futures: NQ flat, ES -0.3%, NVDA +0.8%, SOXX +0.4%.
+3. Sector rotation: Rotation into defensives; semis lagging.
+4. Key levels: TQQQ 68.40–71.20; SOXL 36.80–39.10; FNGU 180–188.
+5. Aggression level: Selective Long — tight stops only.
+6. Red flags: VIX 26 — watch for volatility decay on 3x names.
+
+**Recommended Approach:** Only take strongest 9-gate setups on TQQQ/NVDL with 1% risk. Sit out if no clear pullback by 10:30 ET.
+
+Now generate today's briefing in exactly this style. Be direct and actionable. End exactly with: "**Recommended Approach:** ..."
 
 Focus on setups that fit a 9-gate morning pullback system. No bearish or short ideas."""
         
