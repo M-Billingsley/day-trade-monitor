@@ -716,10 +716,6 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
         else:
             justification = "✅ **Buy** (7–8/9) → Standard conviction = **1.0%** account risk"
 
-            # Fix risk calculation (handles "1.0%" string)
-            risk_pct_float = float(str(risk_pct).strip("%")) / 100
-            dynamic_risk_dollars = account_size * risk_pct_float
-
         with st.container(border=True):
             st.subheader("Execution Instructions – BUY LONG")
 
