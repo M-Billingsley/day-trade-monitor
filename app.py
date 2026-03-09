@@ -499,7 +499,7 @@ else:
     st.info("🕒 Grok briefing will auto-generate between 7:30–9:30 ET (or click the button below)")
 
 # Manual button (works anytime)
-if st.button("🔄 Generate Grok Briefing Now", type="primary", use_container_width=True):
+if st.button("🔄 Generate Grok Briefing Now", type="primary", use_container_width="stretch):
     with st.spinner("Calling Grok..."):
         briefing = get_grok_premarket_briefing(current_regime, current_qqq, current_vix, strong_summary)
         st.session_state[grok_key] = briefing
@@ -772,7 +772,7 @@ if "selected_ticker" in st.session_state and st.session_state.selected_ticker:
             
             # ====================== ONE-CLICK LOG TRADE ======================
             st.markdown("**5. Quick Log This Trade**")
-            if st.button("📝 Log This Trade to Journal (auto-filled)", type="primary", use_container_width=True):
+            if st.button("📝 Log This Trade to Journal (auto-filled)", type="primary", use_container_width='Stretch"):
                 entry_price = suggested_buy
                 notes_auto = f"Signal: {data.get('label')} | Strength: {data.get('strength')}/9 | Risk: {risk_pct:.1f}% | Plan followed"
                 
