@@ -499,7 +499,7 @@ else:
     st.info("🕒 Grok briefing will auto-generate between 7:30–9:30 ET (or click the button below)")
 
 # Manual button (works anytime)
-if st.button("🔄 Generate Grok Briefing Now", type="primary", use_container_width="stretch):
+if st.button("🔄 Generate Grok Briefing Now", type="primary", use_container_width="stretch"):
     with st.spinner("Calling Grok..."):
         briefing = get_grok_premarket_briefing(current_regime, current_qqq, current_vix, strong_summary)
         st.session_state[grok_key] = briefing
