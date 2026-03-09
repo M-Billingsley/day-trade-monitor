@@ -505,8 +505,10 @@ if st.button("🔄 Generate Grok Briefing Now", type="primary", use_container_wi
         st.session_state[grok_key] = briefing
         st.rerun()
         
-# ====================== LIVE HEAT-MAP ======================
+# ====================== LIVE HEAT-MAP (Click any card to open plan) ======================
 st.subheader(f"📈 Live Heat-Map – {len(st.session_state.dynamic_tickers)} Tickers")
+st.caption("👆 Click any card below to open its full trade plan instantly")
+
 heat_cols = st.columns(7)
 for i, tick in enumerate(st.session_state.dynamic_tickers):
     try:
@@ -514,19 +516,27 @@ for i, tick in enumerate(st.session_state.dynamic_tickers):
         price = data['Close'].iloc[-1]
         chg = (price - data['Close'].iloc[-2]) / data['Close'].iloc[-2] * 100
         color = "#15803d" if chg > 0 else "#b91c1c"
+        
         with heat_cols[i % 7]:
-            st.markdown(f"""
-            <div style="background:{color}; color:white; padding:10px; border-radius:10px; text-align:center; margin-bottom:8px;">
-                <b>{tick}</b><br>${price:,.2f}<br><span style="font-size:1.1em;">{chg:+.1f}%</span>
-            </div>
-            """, unsafe_allow_html=True)
+            if st.button(
+                f"**{tick}**\n${price:,.2f}\n{chg:+.1f}%",
+                key=f"heat_{tick}",
+                width="stretch",
+                help=f"Open full plan for {tick}"
+            ):
+                # Set selected ticker and load its data
+                st.session_state.selected_ticker = tick
+                for row in st.session_state.get("ticker_data_list", []):
+                    if row["Ticker"] == tick:
+                        st.session_state.ticker_data = row["Data"]
+                        break
+                else:
+                    st.session_state.ticker_data = {}  # fallback
+                st.rerun()   # instantly shows the plan below
+                
     except:
         with heat_cols[i % 7]:
-            st.markdown(f"""
-            <div style="background:#374151; color:white; padding:10px; border-radius:10px; text-align:center; margin-bottom:8px;">
-                <b>{tick}</b><br>—<br>—
-            </div>
-            """, unsafe_allow_html=True)
+            st.button(f"**{tick}**\n—\n—", key=f"heat_{tick}_err", disabled=True, width="stretch")
 
 # ====================== SIGNAL OVERVIEW TABLE ======================
 st.subheader("📋 Signal Overview Table (click row to open plan)")
